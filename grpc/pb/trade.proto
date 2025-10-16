@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+import "validate/validate.proto";
+
+service TradeBlockChain {
+    rpc UpsertCreditAmount(UpsertCreditAmountRequest) returns (UpsertCreditAmountResponse) {} // 授信额度upsert
+    rpc TransferCredit(TransferCreditRequest) returns (TransferCreditResponse) {} // 转账授信额度
+    rpc ProcessPaymentFlow(PaymentFlowRequest) returns (PaymentFlowResponse); //银行流水存证
+}
+
+message UpsertCreditAmountRequest {
+    int64 type = 1; //操作类型 1，新增授信额度 2，更改授信额度 3，新增质押额度
+    UpsertCreditData upsert_credit_data = 2; 
+}
+
+message UpsertCreditData {
+    string merchant_id = 1 [(validate.rules).string.min_len  =  0]; //商户id
+    string merchant_name = 2; //商户名称（新增）
+    string amount = 3; //授信额度
+    string pledge_amount = 4; //缴纳本金（名称更新）
+    string account = 5 [(validate.rules).string.len =  42]; //web3账号
+    string org = 6 [(validate.rules).string.min_len  =  0]; //web3组织账号
+    string assetsKey = 7 [(validate.rules).string.min_len  =  0]; //资产key
+    string seqNo = 8 [(validate.rules).string.min_len  =  0]; //序列号
+}
+
+message UpsertCreditAmountResponse {
+    int64  code = 1;  // 响应码
+    string msg = 2;  // 响应描述
+    TradeTxData data = 3;
+}
+
+message TradeTxData {
+    string txId = 1; //交易hash
+}
+
+message TransferCreditRequest {
+    string issuer_id = 1 [(validate.rules).string.min_len  =  0]; //收款方id（名称更新）
+    string issuer_name = 2 [(validate.rules).string.min_len = 0]; // 付款方商户名称（新增）
+    string issuer_account = 3 [(validate.rules).string.len =  42]; //收款方web3地址（名称更新）
+    string issuer_org = 4 [(validate.rules).string.min_len  =  0]; //收款方web3组织账号（名称更新）
+    string receiver_id = 5 [(validate.rules).string.min_len  =  0]; //付款方id（名称更新）
+    string receiver_name = 6 [(validate.rules).string.min_len = 0]; // 付款方商户名称（新增）
+    string receiver_account = 7 [(validate.rules).string.len =  42]; //付款方web3地址（名称更新）
+    string receiver_org = 8 [(validate.rules).string.min_len  =  0]; //付款方web3组织账号（名称更新）
+    string amount = 9 [(validate.rules).string.min_len  =  0]; //交易金额（名称更新）
+    string tradeNo = 10 [(validate.rules).string.min_len  =  0]; //订单号（名称更新）
+    string outTradeNo = 11 [(validate.rules).string.min_len  =  0]; // 商户订单号（新增）
+    string goodsName = 12 [(validate.rules).string.min_len  =  0]; // 商品名称（新增）
+    string assetsKey = 13 [(validate.rules).string.min_len  =  0]; //资产key 
+    string paymentTime = 14 [(validate.rules).string.min_len  =  0]; //支付成功时间（新增）
+}
+
+message TransferCreditResponse {
+    int64  code = 1;  // 响应码
+    string msg = 2;  // 响应描述
+    TradeTxData data = 3;
+}
+
+
+message PaymentFlowRequest {
+    string tradeNo = 1 [(validate.rules).string.min_len  =  0]; // 订单号（新增）
+    string amount = 2 [(validate.rules).string.min_len  =  0]; // 打款金额
+    string transactionSerialNumber = 3 [(validate.rules).string.min_len  =  0]; //银行交易流水号（名称更新）
+    string creditorId = 4 [(validate.rules).string.min_len  =  0]; //收款方id（名称更新）
+    string creditorName = 5 [(validate.rules).string.min_len  =  0];// 收款方商户名称（名称更新）
+    string debtorId = 6 [(validate.rules).string.min_len  =  0]; //付款方id（名称更新）
+    string debtorName = 7 [(validate.rules).string.min_len  =  0];// 付款方商户名称（名称更新）
+    string paymentTime = 8 [(validate.rules).string.min_len  =  0]; //打款成功时间
+    string bankCardNumber = 9 [(validate.rules).string.min_len  =  0];// 买家银行账户
+    string bankName = 10 [(validate.rules).string.min_len  =  0]; // 买家银行名称
+    string corporationId = 11 [(validate.rules).string.min_len  =  0]; // 资产id
+}
+    
+    
+message PaymentFlowResponse {
+    int64  code = 1;  // 响应码
+    string msg = 2;  // 响应描述
+    TradeTxData data = 3;
+}
+
+

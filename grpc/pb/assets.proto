@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+import "google/protobuf/empty.proto";
+
+
+service Wallet {
+  // rpc MintCoins (MintCoinsReq) returns (MintCoinsResp) {} // 稳定币增发
+  rpc Register (google.protobuf.Empty) returns (RegisterResp) {}  // 注册区块链账号
+  // rpc CoinsExchange (CoinsExchangeReq) returns (CoinsExchangeResp) {} // 货币兑换
+  // rpc CheckBalanceCoins (CheckBalanceCoinsReq) returns (CheckBalanceCoinsResp) {} // 稳定币余额查询
+}
+
+// 通用响应结构
+message UniversalResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+}
+
+message MintCoinsReq {
+  string address = 1 ; // 区块链账户
+  string org_msp_id = 2 ; // 账户所属组织
+  uint64 amount = 3 ; // 增发数量
+}
+
+message MintCoinsResp {
+  int64 code = 1; // 状态码
+  string desc = 2;  // 描述信息
+  uint64 amount = 3;  // 增发数量
+}
+
+
+message UserData {
+  string account = 1 ; // 区块链账户
+  string org = 2 ; // 账户所属组织
+}
+
+message RegisterResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  UserData data = 3;
+ 
+}
+
+message CoinsExchangeReq {
+  string address = 1 ; // 账户
+  string org_msp_id = 2 ; // 账户所属组织
+  uint64 amount = 3 ; // 数量(单位:分)
+  int64  genre = 4 ; // 类型(1-充值 2-提现)
+  string payment_id = 5 ; // 支付id
+}
+
+message CoinsExchangeResp {
+  string tx_id = 1; // 交易ID
+  int64  code = 2; // 状态码
+  string desc = 3;  // 描述信息
+}
+
+
+message CheckBalanceCoinsReq {
+  string address = 1 ; // 账户
+  string org_msp_id = 2 ; // 账户所属组织
+}
+
+message CheckBalanceCoinsResp {
+  int64 code = 1; // 状态码
+  string desc = 2;  // 描述信息
+  string balance = 3;  // 余额(单位:分)
+}

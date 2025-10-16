@@ -1,0 +1,364 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+import "validate/validate.proto";
+
+
+service TicketsV1 {
+//  rpc BalanceOf(BalanceOfReq) returns (BalanceOfResp) {} // 查询余额
+//  rpc OwnerOf(OwnerOfReq) returns (OwnerOfResp) {} // 查询资产拥有者
+  rpc TransferToken(TransferTokenReq) returns (TransferTokenResp) {} // token转账
+//  rpc Approve(ApproveReq) returns (ApproveResp) {} // 授权指定资产
+//  rpc SetApprovalForAll(SetApprovalForAllReq) returns (SetApprovalForAllResp) {} // 托管所有资产
+//  rpc GetApproved(GetApprovedReq) returns (GetApprovedResp) {} // 查询资产托管client
+//  rpc IsApprovedForAll(IsApprovedForAllReq) returns (IsApprovedForAllResp) {} // 查询资产托管状态
+//  rpc Name(google.protobuf.Empty) returns (NameResp) {} // 查询NFT-Name
+//  rpc Symbol(google.protobuf.Empty) returns (SymbolResp) {} // 查询NFT-Symbol
+//  rpc SetOption(SetOptionReq) returns (SetOptionResp) {} // 设置NFT合约信息
+//  rpc TokenUri(TokenUriReq) returns (TokenUriResp) {} // 查询Token-Uri
+//  rpc TotalSupply(google.protobuf.Empty) returns (TotalSupplyResp) {} // 查询发行总量
+  rpc MintToken(MintTokenReq) returns (MintTokenResp) {} // 铸造NFT
+  rpc OwnerOf(OwnerOfReq) returns (OwnerOfResp) {}
+  rpc GetNtfInfo(GetTokenInfoReq) returns (GetTokenInfoResp) {}
+  rpc BatchMintToken(BatchMintTokenReq) returns (BatchMintTokenResp) {}
+  rpc VerifyTicket(VerifyTicketReq) returns (VerifyTicketResp) {}
+  rpc UpdateTicketStatus(UpdateTicketStatusReq) returns (UpdateTicketStatusResp) {}
+//  rpc Burn(BurnReq) returns (BurnResp) {} // 销毁NFT
+//  rpc ClientaddressBalance(google.protobuf.Empty) returns (ClientaddressBalanceResp) {} // 查询账户余额
+//  rpc ClientaddressID(google.protobuf.Empty) returns (ClientaddressIDResp) {} // 查询账户身份ID
+}
+
+// 通用响应结构
+message ContractUniversalResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+}
+
+///////////////////////////////////
+message OwnerOfReq {
+  string address = 1 [(validate.rules).string.len =  42]; // 区块链账户
+  string OrgMspID = 2 [(validate.rules).string.min_len  =  0]; // 账户所属组织
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; // token id
+}
+
+message AddressData {
+  string address = 1; // 拥有者地址
+}
+//
+message OwnerOfResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  AddressData data = 3;
+}
+//
+//message OwnerOfReq {
+//  string token_id = 1; // NFT-ID
+//}
+//
+//message OwnerOfResp {
+//  ContractUniversalResp common = 1;
+//  int64 owner = 2; // 资产拥有者
+//}
+
+message TransferTokenReq {
+  string fromOrgMspID = 1 [(validate.rules).string.min_len  =  0];
+  string from = 2 [(validate.rules).string.len =  42];    // The current owner of the non-fungible token
+  string toOrgMspID = 3 [(validate.rules).string.min_len  =  0];
+  string to = 4 [(validate.rules).string.len =  42];      // The new owner
+  string tokenId = 5 [(validate.rules).string.min_len  =  0]; // the non-fungible token to transfer
+  int64 transferType = 6;
+}
+
+message TransferTokenResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+ 
+}
+
+message TicketFields {
+  string ticketType = 1;
+  ScenceInfo scenceInfo = 2;
+  Rules rules = 3;
+  ProductsItems productsItems = 4;
+  Prices prices = 5;
+  TicketInfo ticketInfo = 6;
+}
+
+message ScenceInfo {
+  string scenicName = 1;
+  string rating = 2;
+  string businessTime = 3;
+  string location = 4;
+  string enterpriseName = 5;
+  string merchantId = 6;
+}
+
+message TicketingRules {
+  string ticketingType = 1;
+  string usageTimeAfterPurchase = 2;
+  string ticketingPeriod = 3;
+  string realNameVerification = 4;
+  string realNameVerificationValidation = 5;
+  string personalPurchaseRestriction = 6;
+  string ticketIssuanceImmediateVerification = 7;
+  string windowSaleOnly = 8;
+}
+
+message RefundRules {
+  string refundable = 1;
+  string refundPeriodRate = 2;
+}
+
+message CheckRules {
+  string realNameVerificationIdMethod = 1;
+  string checkpoint = 2;
+  string passageWay = 3;
+  string timedTicketReservation = 4;
+}
+
+message Rules {
+  TicketingRules ticketingRules = 1;
+  RefundRules refundRules = 2;
+  CheckRules checkRules = 3;
+}
+
+message Products {
+  string productType = 1;
+  string productName = 2;
+  string validDuration = 3;
+  string firstDayActivation = 4;
+  string daysValidForEntry = 5;
+  string usageCount = 6;
+  string sellByWeek = 7;
+  string productsTimedReservation = 8;
+  string entryStatistics = 9;
+  string entryRequirements = 10;
+}
+
+message Items {
+  string itemName = 1;
+  string ticketCategory = 2;
+  string purchaseQuantityControl = 3;
+}
+
+message Inventory {
+  string totalInventory = 1;
+  string timedInventory = 2;
+  string purchaseValidityDate = 3;
+  string entryValidityDate = 4;
+}
+
+message ProductsItems {
+  Products products = 1;
+  Items items = 2;
+  Inventory inventory = 3;
+}
+
+message InitalInfo {
+  string marketStandardPrice = 1;
+  string specialDiscountRate = 2;
+  string distributionDiscountRange = 3;
+}
+
+message DirectSales {
+  string directSinglePurchasePrice = 1;
+  string directCombinedPurchasePrice = 2;
+}
+
+message Agent {
+  string agentSinglePurchasePrice = 1;
+  string agentCombinedPurchasePrice = 2;
+  string commissionRatio = 3;
+}
+
+message Distributor {
+  string productSalesPrice = 1;
+  string itemSalesPrice = 2;
+}
+
+message PricingStrategy {
+  DirectSales directSales = 1;
+  Agent agent = 2;
+  Distributor distributor = 3;
+}
+
+message Prices {
+  InitalInfo initalInfo = 1;
+  PricingStrategy pricingStrategy = 2;
+}
+
+message ItemInfo {
+  string sellingPrice = 1;
+}
+
+message UserIdentityInfo {
+  string userName = 1;
+  string idNumber = 2;
+}
+
+message TicketReceiverInfo {
+  string contactPerson = 1;
+  string contactNumber = 2;
+  string idCard = 3;
+}
+
+message VerificationRecords {
+  string verificationDeviceNameType = 1;
+  string idCardRecognitionType = 2;
+  string verificationTime = 3;
+  string verificationCount = 4;
+}
+
+message RefundRecords {
+  string refundTime = 1;
+  string refundReason = 2;
+  string refundAmount = 3;
+}
+
+message TicketInfo {
+  string ticketNumber = 1;
+  ItemInfo itemInfo = 2;
+  string numberOfPeople = 3;
+  UserIdentityInfo userIdentityInfo = 4;
+  string entryTime = 5;
+  string ticketTimedReservation = 6;
+  string ticketStatus = 7;
+  TicketReceiverInfo ticketReceiverInfo = 8;
+  VerificationRecords verificationRecords = 9;
+  RefundRecords refundRecords = 10;
+}
+message MetaData {
+  string tokenURI = 1; //url
+}
+
+message MintTokenReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 铸币账户
+  string tokenId = 2 [(validate.rules).string.min_len  =  0]; //tokenid
+  MetaData metaData = 3; //meta Data
+  string OrgMspID  = 4 [(validate.rules).string.min_len  =  0]; // 组织名称
+  TicketFields  ticketFields = 5; //业务结构
+}
+
+message MintTokenResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+ 
+}
+
+
+message TicketFieldsRsp {
+  string scenceName = 1;
+  string date = 2;
+  string location = 3;
+}
+
+
+message TokenInfo {
+  string address   = 1 [(validate.rules).string.len =  42]; // 铸币账户
+  string tokenId = 2 [(validate.rules).string.min_len  =  0]; //tokenid
+  MetaData metaData = 3; //meta Data
+  string OrgMspID  = 4 [(validate.rules).string.min_len  =  0]; // 组织名称
+  TicketFields  ticketFields = 5; //业务结构
+}
+
+message BatchMintTokenReq {
+  repeated TokenInfo tokenList = 1; // 商品属性，键值对
+}
+
+message BatchMintTokenResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+}
+
+message GetTokenInfoReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; //tokenid
+}
+
+message TokenData {
+  TokenInfo tokenInfo = 1; //NTf详情
+}
+
+message GetTokenInfoResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TokenData data = 3;
+ 
+}
+
+message GetTokenBalanceReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+}
+
+message BalanceData {
+  string balance = 1;  // token 个数
+}
+
+message GetTokenBalanceResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  BalanceData data = 3;
+}
+
+message VerifyTicketReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; //tokenid
+}
+
+message TxDataV1 {
+  string txId = 1;
+}
+
+message VerifyTicketResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+}
+
+message UpdateTicketStatusReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; //tokenid
+  string newStatus = 4 [(validate.rules).string.min_len  =  0]; // 新状态
+}
+
+message UpdateTicketStatusResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+}
+
+message UpdateProductSalesPriceReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; //tokenid
+  string newPrice = 4 [(validate.rules).string.min_len  =  0]; // 新价格
+}
+
+message UpdateProductSalesPriceResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+}
+
+message UpdateTicketInfoReq {
+  string address   = 1 [(validate.rules).string.len =  42]; // 账户
+  string OrgMspID  = 2 [(validate.rules).string.min_len  =  0]; // 组织名称
+  string tokenId = 3 [(validate.rules).string.min_len  =  0]; //tokenid
+  TicketFields  ticketFields = 4; //业务结构
+}
+
+message UpdateTicketInfoResp {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxDataV1 data = 3;
+}
+
+

@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+import "google/protobuf/empty.proto";
+
+service Exchange {
+  rpc listNFT( listNFTReq ) returns ( google.protobuf.Empty ) {}
+  rpc purchaseNFT( purchaseNFTReq ) returns ( google.protobuf.Empty ) {}
+  rpc revokeListing( revokeListingReq ) returns ( google.protobuf.Empty ) {}
+  rpc createBuyOrder( createBuyOrderReq ) returns ( google.protobuf.Empty ) {}
+  rpc acceptBuyOrder( acceptBuyOrderReq ) returns ( google.protobuf.Empty ) {}
+  rpc cancelBuyOrder( cancelBuyOrderReq ) returns ( google.protobuf.Empty ) {}
+  rpc updatePrice( updatePriceReq ) returns ( google.protobuf.Empty ) {}
+  rpc updateSellOrderAmount( updateSellOrderAmountReq ) returns ( google.protobuf.Empty ) {}
+  rpc updateBuyOrderPrice( updateBuyOrderPriceReq ) returns ( google.protobuf.Empty ) {}
+  rpc updateBuyOrderAmount( updateBuyOrderAmountReq ) returns ( google.protobuf.Empty ) {}
+  rpc setTopPrice( setTopPriceReq ) returns ( google.protobuf.Empty ) {}
+  rpc getBalancegetOrder( getBalancegetOrderReq ) returns ( getBalancegetOrderResp ) {}
+  rpc getOrder( getOrderReq ) returns ( getOrderResp ) {}
+  rpc getBuyOrder( getBuyOrderReq ) returns ( getBuyOrderResp ) {}
+  rpc getAllSellOrders( getAllSellOrdersReq ) returns ( getAllSellOrdersResp ) {}
+  rpc getAllBuyOrders( getAllBuyOrdersReq ) returns ( getAllBuyOrdersResp ) {}
+}
+
+message listNFTReq {
+
+}
+
+message purchaseNFTReq {
+
+}
+
+message revokeListingReq {
+
+}
+
+message createBuyOrderReq {
+
+}
+
+message acceptBuyOrderReq {
+
+}
+
+message cancelBuyOrderReq {
+
+}
+
+message updatePriceReq {
+
+}
+
+message updateSellOrderAmountReq {
+
+}
+
+message updateBuyOrderPriceReq {
+
+}
+
+message updateBuyOrderAmountReq {
+
+}
+
+message setTopPriceReq {
+
+}
+
+message getBalancegetOrderReq {
+
+}
+
+message getOrderReq {
+
+}
+
+message getBuyOrderReq {
+
+}
+
+message getAllSellOrdersReq {
+
+}
+
+message getAllBuyOrdersReq {
+
+}
+
+message getBalancegetOrderResp {
+
+}
+
+message getOrderResp {
+
+}
+
+message getBuyOrderResp {
+
+}
+
+message getAllSellOrdersResp {
+
+}
+
+message getAllBuyOrdersResp {
+
+}

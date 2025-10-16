@@ -1,0 +1,2686 @@
+syntax = "proto3";
+
+
+option go_package = "./;pb";
+
+
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+
+service BlockChainTicketServer {
+  rpc mainOrderTicket (RequestMessage) returns (ResponseMessage) {}
+}
+
+/**
+ * 公共数据组件：请求参数错误
+ */
+message ParamError {
+  string param = 1;
+  string error = 2;
+}
+
+
+
+
+enum MessageType {
+  NONE                = 0;
+  TICKET_CHECK        = 1;     //门票核销
+  CREATE_STOCK        = 2;     //库存创建
+  SET_SELF_PRICE      = 3;     //设置价格策略
+  ORDER_TICKET        = 4;     //出票信息
+  GENERATE_TICKET_ISSUANCE = 5;     //生成出票信息（票号/二维码/Sign签名）
+  ORDER_INFO          = 6;
+  TICKET_STATUS_PUSH  = 7;     //门票变更状态推送，包括门票核验，定时的过期检查...
+  DISTRIBUTE_REFUND_CREATE       = 8;      //分销退订单
+  DISTRIBUTION_ORDER_INFO        = 9;      //创建分销单
+  BLOCK_ORDER_REFUND        = 10;      //C端退票同步信息接口
+  TICKET_RECORD        = 11;      //获取门票溯源记录
+  REPAY_ROLL_BACK        = 12;      //还款数据推送
+  STOCK_BATCH_INFO_UPDATE = 13;     //库存批次信息修改
+  QUERY_STOCK_OPT_RECORDS = 14;    //获取库存操作记录
+  PROJECT_BIDDING_REQUEST = 15;    //交易所项目公告
+  INSTRUMENT_TICKET_REQUEST = 16;    //交易所票务标的
+  Query_Announcement_Opt_Records = 17; //交易所公告操作记录
+  Margin_Order = 18; // 保证金订单上链
+  Margin_Order_Over = 19; //保证金缴纳结束上链
+  CREDIT_ASSESSMENT                                                               = 20;   // 信用评估结果上链
+  LOAN_APPLICATION                                                                = 21;   // 借款申请上链
+  LOAN_APPROVAL_PAYMENT                                                           = 22;   // 借款审批通过打款信息上链
+  LOAN_REQUEST                                                                    = 23;   // 贷款申请上链
+  LOAN_REVIEW_DENIED                                                              = 24;   // 贷款审核不通过上链
+  LOAN_REVIEW_APPROVED                                                            = 25;   // 贷款审核通过上链
+  LOAN_REAPPLY                                                                    = 26;   // 贷款审核不通过，再次申请上链
+  PAYMENT_SCHEDULE_GENERATION                                                     = 27;   // 生成还款单上链
+  REPAYMENT_APPLICATION                                                           = 28;   // 申请还款上链
+  REPAYMENT_APPROVED                                                              = 29;   // 还款通过上链
+  REPAYMENT_DENIED                                                                = 30;   // 还款不通过上链
+  REPAYMENT_REAPPLY                                                               = 31;   // 还款审批不通过，再次申请还款上链
+  INSTRUMENT_ORDER                                                                = 32;   // 订单上链
+  QUERY_INSTRUMENT_ORDER_RECORD                                                   = 33;   //标的订单上链记录查询
+  CONVERT_TO_INVOICE                                                              = 34;   // 转为价款
+  REFUND_BALANCE                                                                  = 35;   // 余款退回
+  FULL_REFUND                                                                     = 36;   // 全额原路退回
+  TRADE_CHARGE                                                                    = 37;   //交易服务费
+  TRADE_CHARGE_RECORD                                                             = 38;   //交易服务费操作记录
+  VOUCHER_BLOCKCHAIN                                                              = 39;   // 凭证上链
+}
+
+
+message RequestMessage {
+  string request_id                                     = 1;     // 请求id
+  int64 serial_number                                   = 2;     // 序列id
+  string reference_date                                 = 3;     // 基准日期
+  MessageType message_type                              = 4;     // 消息类型
+  oneof data {
+    BlockChainTicketCheckRequest ticket_check                 = 5;      // 门票核验
+    CreateStockRequest create_stock                           = 6;      // 创建库存
+    SetSelfPriceInfoRequest set_self_price_info               = 7;      // 设置价格策略
+    BlockTicketIssuanceRequest ticket_issuance                = 8;      // 出票信息
+    GenerateTicketIssuanceRequest generate_ticket_issuance    = 9;      // 生成出票信息（票号/二维码/Sign签名）
+    VerificationRequest verification                          = 10;      // 核销接口
+    OrderInfoRequest order_info                               = 11;     // 订单信息同步接口
+    DistributeRefundCreateRequest distribute_refund_create    = 12;     // 分销退单同步接口
+    DistributionOrderInfoRequest distribution_order_info      = 13;     //分销订单信息同步
+    BlockOrderRefundRequest block_order_refund                = 14;     //C端退票同步信息接口
+    QueryTicketOptRecordsRequest query_ticket_record_req      = 15;     //获取门票溯源记录
+    TicketStatusPushRequest ticket_status                     = 16;     //门票变更状态推送，包括门票核验，定时的过期检查...
+    RepayRollBackRequest repayRollBack                        = 17;     //还款数据推送
+    StockBatchInfoUpdateRequest stock_batch_info_update       = 18;     //库存批次信息修改
+    QueryStockOptRecordsRequest query_stock_opt_records       = 19;     //获取库存操作记录
+    ProjectBiddingRequest   project_bidding_request = 20; // 交易所项目公告
+    InstrumentTicketRequest   instrument_ticket_request = 21; // 交易所票务标的
+    QueryAnnouncementOptRecordsRequest query_announcement_opt_records_request = 22; // 交易所公告操作记录
+    MarginOrderRequest margin_order_request = 23; // 保证金订单上链
+    MarginOrderOverRequest margin_order_over_request = 24; //保证金订单结束上链
+    CreditAssessmentRequest credit_assessment                                     = 25;   // 信用评估结果上链请求
+    LoanApplicationRequest loan_application                                       = 26;   // 借款申请上链请求
+    LoanApprovalPaymentRequest loan_approval_payment                              = 27;   // 借款审批通过打款信息上链请求
+    LoanRequestRequest loan_request                                               = 28;   // 贷款申请上链请求
+    LoanReviewDeniedRequest loan_review_denied                                    = 29;   // 贷款审核不通过上链请求
+    LoanReviewApprovedRequest loan_review_approved                                = 30;   // 贷款审核通过上链请求
+    LoanReapplyRequest loan_reapply                                               = 31;   // 贷款审核不通过后再次申请上链请求
+    PaymentScheduleGenerationRequest payment_schedule_generation                  = 32;   // 生成还款单上链请求
+    RepaymentApplicationRequest repayment_application                             = 33;   // 申请还款上链请求
+    RepaymentApprovedRequest repayment_approved                                   = 34;   // 还款通过上链请求
+    RepaymentDeniedRequest repayment_denied                                       = 35;   // 还款不通过上链请求
+    RepaymentReapplyRequest repayment_reapply                                     = 36;   // 还款审批不通过后再次申请上链请求
+    InstrumentOrderRequest  instrument_order_request                              = 37;   // 订单生成，待支付
+    QueryInstrumentOrderRecordRequest query_instrument_order_record_request       = 38;   //标的订单上链记录查询
+    ConvertToInvoiceRequest convert_to_invoice_request                            = 39;   // 转为价款
+    RefundBalanceRequest refund_balance_request                                   = 40;   // 余款退回
+    FullRefundRequest full_refund_request                                         = 41;   // 全额原路退回
+    TradeChargeRequest trade_charge_request                                       = 42;   // 交易服务费
+    TradeChargeRecordRequest trade_charge_record                                  = 43;   //交易服务费操作记录
+    VoucherBlockchainRequest voucher_blockchain_request                           = 44;   // 凭证上链
+  }
+}
+
+
+
+
+message ResponseMessage {
+  string request_id                                     = 1;    // 请求id
+  int64 code                                            = 2;    // 响应码
+  string message                                        = 3;    // 错误描述
+  repeated ParamError param_errors                      = 4;    // 如果请求参数有错，错误的详情
+  string reference_date                                 = 5;    // 基准日期
+  MessageType message_type                              = 6;    // 消息类型
+  oneof data {
+    BlockChainTicketCheckResponse ticket_check                        = 7;    // 门票核验
+    CreateStockResponse create_stock                                  = 8;    // 创建库存
+    SetSelfPriceInfoResponse set_self_price_info                      = 9;    // 设置价格策略
+    BlockTicketIssuanceResponse ticket_issuance                       = 10;   // 出票信息
+    GenerateTicketIssuanceResponse Generate_Ticket_Issuance           = 11;   //生成出票信息（票号/二维码/Sign签名）
+    VerificationResponse verification                                 = 12;   //核销接口
+    OrderInfoResponse order_info                                      = 13;   //订单信息同步接口（含C端/B端）
+    TicketStatusResponse ticket_status_response                       = 14;   //出票状态更新
+    DistributeRefundCreateResponse distribute_refund_create           = 15;    // 分销退单同步接口
+    DistributionOrderInfoResponse distribution_order_info_response    = 16;     //分销订单信息同步接口
+    BlockOrderRefundResponse blockOrder_refund_response               = 17;    //c端退票
+    QueryTicketOptRecordsResponse query_ticket_record_res             = 18;    //获取门票溯源记录
+    TicketStatusPushResponse ticket_status_push_response              = 19;    //门票变更状态推送，包括门票核验，定时的过期检查...
+    RepayRollBackResponse repay_roll_back_response                  = 20;    //还款返回
+    StockBatchInfoUpdateResponse stock_batch_info_update_response     = 21;    //库存批次信息修改
+     QueryStockOptRecordsResponse query_stock_opt_records_response     = 22;     //获取库存操作记录
+     ProjectBiddingResponse project_bidding_response     = 23;   // 交易所项目公告
+     InstrumentTicketResponse Instrument_ticket_response     = 24;   // 交易所票务标的
+     QueryAnnouncementOptRecordsResponse query_announcement_opt_records_response = 25; //交易所公告操作记录
+     MarginOrderResponse margin_order_response = 26; // 保证金订单上链
+     MarginOrderOverResponse margin_order_over_response = 27; //保证金订单结束上链
+      FinancialResponse credit_assessment_response                                  = 28;   // 信用评估结果上链响应
+    FinancialResponse loan_application_response                                   = 29;   // 借款申请上链响应
+    FinancialResponse loan_approval_payment_response                              = 30;   // 借款审批通过打款信息上链响应
+    FinancialResponse loan_request_response                                       = 31;   // 贷款申请上链响应
+    FinancialResponse loan_review_denied_response                                 = 32;   // 贷款审核不通过上链响应
+    FinancialResponse loan_review_approved_response                               = 33;   // 贷款审核通过上链响应
+    FinancialResponse loan_reapply_response                                       = 35;   // 贷款审核不通过后再次申请上链响应
+    FinancialResponse payment_schedule_generation_response                        = 36;   // 生成还款单上链响应
+    FinancialResponse repayment_application_response                              = 37;   // 申请还款上链响应
+    FinancialResponse repayment_approved_response                                 = 38;   // 还款通过上链响应
+    FinancialResponse repayment_denied_response                                   = 39;   // 还款不通过上链响应
+    FinancialResponse repayment_reapply_response                                  = 40;   // 还款审批不通过后再次申请上链响应
+    InstrumentOrderResponse  instrument_order_response                            = 41;   // 订单生成上链
+    QueryInstrumentOrderRecordResponse query_instrument_order_record_response     = 42;   //标的订单上链记录查询
+    TradeResponse convert_to_invoice_response                                     = 43;   // 转为价款
+    TradeResponse refund_balance_response                                         = 44;   // 余款退回
+    TradeResponse full_refund_response                                            = 45;   // 全额原路退回
+    TradeResponse trade_charge_response                                           = 46;   //交易服务费
+    TradeChargeRecordResponse trade_charge_record_response                        = 47;   //交易服务费操作记录
+    VoucherBlockchainResponse voucher_blockchain_response                         = 48;   // 凭证上链
+  }
+
+}
+
+message TicketStatusPushRequest{
+
+  repeated TicketStatusInfo data = 1;
+
+}
+
+message TicketStatusPushResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+message TicketStatusInfo {
+  string tx_id                    = 1;       //交易哈希
+  string ticket_number            = 2;       //票号
+  int32 ticket_status             = 3;       //票状态
+  int32 used_count                = 4;       //票使用次数
+  int32 checked_num               = 5;       //已检票人数
+  int32 used_days                 = 6;       //已入园天数
+}
+
+enum VerificationResult {
+  PASS    = 0;       //核验通过
+  REFUSE  = 1;       //核验拒绝/失败
+
+}
+
+message BlockChainTicketCheckRequest{
+
+  string account = 1 [(validate.rules).string.len =  42];           //账户
+  string org     = 2 [(validate.rules).string.min_len  =  0];           //组织
+  int32 check_type = 3;         //检票类型：1-二维码；2-票号；3-身份证；4-人脸
+
+
+  repeated TicketCheckData list = 4;       //检票数据
+
+  message TicketCheckData{
+    //核销基础核心数据
+    string ticket_number          = 1 ;    //票号
+    string stock_batch_number     = 2 [(validate.rules).string.min_len  =  0];    //库存批次号
+    string enter_time             = 3 ;    //核销时间
+    int32  check_number           = 4 ;    //核销次数
+
+    //核销补充数据
+    string scenic_id              = 5 ;    //景区id
+    string idCard                 = 6 ;    //身份证
+    string qrCode                 = 7 ;    //二维码
+    string otherWay               = 8 ;    //拓展字段，其他未知信息
+    string pointName              = 9 ;    //检票点名称
+    string pointId                = 10;    //检票点id
+    string equipmentName          = 11;    //检票设备名称
+    string equipmentId            = 12;    //检票设备id
+    string equipmentType          = 13;    //检票设备类型
+    string idName                 = 14;    //姓名
+
+    //后台人工核销
+    string userId                 = 15;     //操作人用户id
+    string username               = 16;     //操作人用户名
+
+
+    //推送数据
+    TicketStatusInfo ticket_status =17;     //推送票的状态
+  }
+}
+
+
+
+message BlockChainTicketCheckResponse{
+
+  int64  code = 1;        // 响应码
+  string msg = 2;         // 响应描述
+  TxData data = 3;
+
+  message TxData {
+      string txId = 1;
+   }
+
+}
+
+
+
+// service Tickets {
+//   rpc CreateStock (CreateStockReq) returns (CreateStockResp) {} // 创建库存
+//   rpc SetSelfPrice (SetSelfPriceInfoReq) returns (SetSelfPriceInfoResp) {} // 价格策略接口
+//   rpc TicketIssuance(TicketIssuanceReq) returns (TicketIssuanceResp) {} // 出票信息接口
+//   rpc CheckTicket(VerificationReq) returns (VerificationResp) {} // 核销接口
+// }
+
+message TxData {
+  string txId = 1; //交易hash
+  int64 blockHeight = 2; //区块高度
+  int64 onChainTime = 3; // 时间戳
+  string chainName = 4;
+}
+
+message CheckData {
+  bool is_valid = 1; //是否有效
+}
+
+message VerificationResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  CheckData data = 3;
+}
+
+message BlockTicketIssuanceResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+message SetSelfPriceInfoResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+message CreateStockResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+message TicketStatusResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+// 通用响应结构
+// 通用响应结构
+message CreateStockRequest {
+  // 库存、商品、产品、出票、检票、退票、景区信息
+  SimpleTicket simpleTicket = 1;
+  // 出票信息
+  BlockTicketIssuanceRequest ticketIssuance = 2;
+  // 核销信息
+  BlockChainTicketCheckRequest blockChainTicketCheck = 3;
+  // 库存批次号
+  string stock_batch_number = 4 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 5 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 6 [(validate.rules).string.min_len  =  0];
+  // 景区批次号
+  int64 batch_id = 7 ;
+   //是否交易所发布
+   google.protobuf.Int32Value isExchange = 8;
+
+}
+
+// 产品信息
+message SimpleTicket {
+  // 主键ID
+  int64 id = 1;
+  // 景区ID
+  int64 scenic_id = 2;
+  // 结算ID
+  int64 account_id = 3;
+  // 产品名称
+  string name = 4;
+  // C端展示名称
+  string pc_name = 5;
+  // 废弃：出票类型
+  google.protobuf.Int32Value issue_type = 6 ;
+  // 废弃：出票方式
+  google.protobuf.Int32Value mode = 7 ;
+  // 市场指导价
+  double market_price = 8;
+  // 产品类型
+  google.protobuf.Int32Value pro_type = 9;
+  // 使用方式：0-每天，1-一共
+  google.protobuf.Int32Value use_type = 10;
+  // 是否分时预约（0：否，1：是）
+  google.protobuf.Int32Value time_restrict = 11;
+  // 控制方式（0：不控制，1：按星期控制）
+  google.protobuf.Int32Value restrict_type = 12;
+  // 控制星期（1#2#3）
+  string restrict_week = 13;
+  // 使用有效期，1为当天有效 :有效时长（天）
+  google.protobuf.Int32Value validity_day = 14;
+  // 是否首日激活（1 - 首日激活，0 - 未激活）
+  google.protobuf.Int32Value is_activate = 15;
+  // 使用次数，0表示无限次
+  google.protobuf.Int32Value use_count = 16;
+  // 可入园天数
+  google.protobuf.Int32Value available_days = 17;
+  // 排序
+  google.protobuf.Int32Value sorts = 18;
+  // 是否参与入园统计（0：否，1：是）
+  google.protobuf.Int32Value park_statistic = 19;
+  // 图片列表，以分号隔开
+  string picture_url = 20;
+  // 服务商ID
+  int64 operator_id = 21;
+  // 入园须知
+  string notice = 22;
+  // 商品权限名称前缀（产品名称+产品类别）
+  string pro_role_name = 23;
+
+  //商品信息集合
+  BlockTicketGoods ticketGoods = 24;
+
+  //库存信息
+  TicketStock ticketStock = 25;
+}
+
+// 产品分时预约信息
+message TimeSharing {
+  // 主键ID
+  int64 id = 1;
+  // 票种ID
+  int64 ticket_id = 2;
+  // 分时预约开始时间
+  string begin_time = 3;
+  // 分时预约结束时间
+  string end_time = 4;
+  // 简易名称
+  string simple_name = 5;
+
+}
+
+//商品信息
+message BlockTicketGoods {
+  // 主键ID
+  int64 id = 1;
+  // 商品名称
+  string goods_name = 2;
+  // 单一票种ID
+  int64 ticket_id = 3;
+  // 出票规则
+  int64 issue_id = 4;
+  // 检票规则
+  int64 check_id = 5;
+  // 退票规则
+  int64 retreat_id = 6;
+  // 分时预约ID
+  int64 time_share_id = 7;
+  // 整体折扣率
+  double overall_discount = 8;
+  // 分销商开始折扣率
+  double begin_discount = 9;
+  // 分销商结束折扣率
+  double end_discount = 10;
+  // 票种
+  google.protobuf.Int32Value type = 11;
+  // 销售渠道
+  google.protobuf.Int32Value sale_channel = 12;
+  // 排序
+  google.protobuf.Int32Value sorts = 13;
+  // 周末挂牌价
+  double weekend_price = 14;
+  // 节假日挂牌价
+  double holiday_price = 15;
+  // 开始价值区间
+  double begin_price_range = 16;
+  // 结束价值区间
+  double end_price_range = 17;
+  // 技术服务费
+  double service_charge_rate = 18;
+  // 实际售价
+  double real_price = 19;
+  // 是否实名制（0：否，1：是）
+  google.protobuf.Int32Value is_real_name = 20;
+  // 是否出票即检验（0：否，1：是）
+  google.protobuf.Int32Value is_check = 21;
+  // 是否旅游卡购票（0：否，1：是）
+  google.protobuf.Int32Value is_travel = 22;
+  // 是否允许成员人数控制（0：否，1：是）
+  google.protobuf.Int32Value is_people_number = 23;
+  // 成团数量
+  google.protobuf.Int32Value people_number = 24;
+  // 最小人数控制
+  google.protobuf.Int32Value min_people = 25;
+  // 最大人数控制
+  google.protobuf.Int32Value max_people = 26;
+  // 开始时间
+  string begin_time = 27;
+  // 结束时间
+  string end_time = 28;
+  // 使用方式
+  google.protobuf.Int32Value use_type = 29;
+  // 使用有效期，1为当天有效
+  google.protobuf.Int32Value validity_day = 30;
+  // 预购须知
+  string notice = 31;
+  // 购买照片
+  string buy_url = 32;
+  // 产品名称+类别+销售渠道+票种+价格开始至截止日期
+  string role_name = 33;
+  // 存在工单
+  string work_state = 34;
+  // 模板ID，用于校验是否存在产品使用模板
+  int64 template_id = 35;
+
+  //检票规则信息
+  RuleCheck ruleCheck = 36;
+
+  //出票规则信息
+  RuleIssue ruleIssue = 37;
+
+  //退票规则信息
+  RuleRetreat ruleRetreat = 38;
+
+  //价格策略
+  SetSelfPrice setSelfPrice = 39;
+
+  //分时预约信息集合
+  TimeSharing timeSharing = 40;
+
+  //检票点
+  repeated string checkPointIdList = 41;
+}
+
+// 检票规则信息
+message RuleCheck {
+  // 主键ID
+  int64 id = 1;
+  // 景区ID
+  int64 scenic_id = 2;
+  // 身份识别类型，多选以逗号隔开
+  string identity_type = 3;
+  // 检票规则名称
+  string name = 4;
+  // 检票控制方式
+  google.protobuf.Int32Value control_type = 5;
+  // 产品类型
+  google.protobuf.Int32Value pro_type = 6;
+  // 检票通过方式（0：一检一人，1：一检多人）
+  google.protobuf.Int32Value adopt_type = 7;
+  // 检票间隔时间
+  google.protobuf.Int32Value interval_time = 8;
+  // 限制总通过次数，0表示无限次（已废弃）
+  google.protobuf.Int32Value limit_times = 9;
+  // 分时预约检票设置
+  google.protobuf.Int32Value time_share_book = 10;
+
+}
+
+// 出票规则信息
+message RuleIssue {
+  // 主键ID
+  int64 id = 1;
+  // 景区ID
+  int64 scenic_id = 2;
+  // 出票规则名称
+  string name = 3;
+  // 出票方式
+  google.protobuf.Int32Value way = 4;
+  // 出票类型
+  google.protobuf.Int32Value type = 5;
+  // 实名方式
+  google.protobuf.Int32Value is_real_name = 6;
+  // 使用时间
+  string use_time = 7;
+  // 当天购票开始时间
+  string begin_time = 8;
+  // 当天购票结束时间
+  string end_time = 9;
+  // 是否校验实名制（1：是）
+  google.protobuf.Int32Value real_name_check = 10;
+  // 是否仅限本人购买（1：是）
+  google.protobuf.Int32Value only_owner_buy = 11;
+  // 是否校验权益（1：是）
+  google.protobuf.Int32Value rights_check = 12;
+  // 权益ID
+  int64 rights_id = 13;
+  // 是否出票即核销（1：是）
+  google.protobuf.Int32Value issue_and_check = 14;
+  // 是否需要审批（1：是）
+  google.protobuf.Int32Value need_approval = 15;
+  // 审批ID
+  int64 approve_id = 16;
+  // 审批内容
+  string approve_content = 17;
+  // 规则类型：1、权益票、2、权益卡、3普通票
+  google.protobuf.Int32Value rule_type = 18;
+  // 仅窗口售票：1、是，2、否
+  google.protobuf.Int32Value only_window_sale = 19;
+}
+
+// 退票规则信息
+message RuleRetreat {
+  // 主键ID
+  int64 id = 1;
+  // 景区ID
+  int64 scenic_id = 2;
+  // 退票规则名称
+  string name = 3;
+  // 是否可退票（1：可退，0：不可退）
+  google.protobuf.Int32Value is_retreat = 4;
+  // 默认退票费率
+  double default_rate = 5;
+
+}
+
+//库存信息
+message TicketStock {
+  // 统一社会信用代码
+  string credit_code = 1;
+  // 景区ID
+  string scenic_id = 2;
+  // 产品ID
+  string ticket_id = 3;
+  // 购买有效开始时间
+  string purchase_begin_time = 4;
+  // 购买有效结束时间
+  string purchase_end_time = 5;
+  // 入园有效开始时间
+  string enter_begin_time = 6;
+  // 入园有效结束时间
+  string enter_end_time = 7;
+  // 总库存
+  google.protobuf.Int32Value total_stock = 8;
+  // 备注
+  string remark = 9;
+  // 产品类型
+  google.protobuf.Int32Value ticket_type = 10;
+  // 每天数量（有分时预约需要累加）
+  google.protobuf.Int32Value nums = 11;
+  // 控制星期（[1,2,3]）
+  repeated string restrict_week_list = 12;
+  // 结算ID
+  string account_id = 13;
+  // 服务商ID
+  string operator_id = 14;
+  // 区块链meta
+  string meta = 15;
+  // 是否启用区块链（1:启用 0：不启用）
+  string flag = 16 ;
+  // 账户
+  string account = 17;
+  // 组织
+  string org = 18 ;
+  // 景区名称
+  string scenic_name = 19;
+  // 产品名称
+  string ticket_name = 20;
+}
+
+//出票信息
+message BlockTicketIssuanceRequest{
+  //出票信息
+  repeated TicketData ticketData = 1;
+  // 短信接收方电话号码
+  string phone = 2;
+  // 渠道（0：H5，5：窗口）
+  string source_type = 3;
+  // 组订单id
+  string order_group_id = 4;
+
+}
+//出票信息
+message TicketData {
+  //游客身份信息
+  message BuyerInfo{
+    // 姓名
+    string id_name = 1;
+    // 身份证
+    string id_number = 2;
+  }
+
+  //出票子表信息
+  message TicketIssuanceSubInfo {
+    //出票表id
+    string ticket_issuance_id = 1;
+    //票种id
+    int64 ticket_type_id = 2;
+    //子票种id
+    int64 ticket_type_sub_id = 3;
+    //票种
+    google.protobuf.Int32Value goods_type = 4;
+    //可通过次数
+    google.protobuf.Int32Value pass_times = 5;
+    //已通过次数
+    google.protobuf.Int32Value passed_times = 6;
+    //每次通过次数
+    google.protobuf.Int32Value single_per_times = 7;
+    //是否有效：1 - 无效
+    google.protobuf.Int32Value is_valid = 8;
+    //入园开始时段HH:mm
+    string enter_begin_time = 9;
+    //入园结束时段HH:mm
+    string enter_end_time = 10;
+    //过期时间（yyyy-mm-dd）
+    string overdue_time = 11;
+    //使用有效期
+    google.protobuf.Int32Value validity_day = 12;
+    //已通过检票规则限制总通过次数
+    google.protobuf.Int32Value rule_passed_times = 13;
+    //商品id
+    int64 goods_id = 14;
+    //景区id
+    int64 scenic_id = 15;
+  }
+  //游客信息
+  repeated BuyerInfo buyer_info = 1;
+  // 批次id
+  repeated int64 batch_Id = 2;
+  // 订单号
+  string order_id = 3;
+  // 游玩人数
+  google.protobuf.Int32Value player_num = 4;
+  //类型：1 - 出票，2 - 退票
+  google.protobuf.Int32Value issuance_type = 5;
+  //状态 0：未核销 1 : 已核销 2：已过期 3：已完成 4：已退票
+  google.protobuf.Int32Value status = 6;
+  //检票类型
+  string check_type = 7;
+  //二维码
+  string print_encode = 8;
+  //入园开始时段HH:mm
+  string enter_begin_time = 9;
+  //入园结束时段HH:mm
+  string enter_end_time = 10;
+  //过期时间（yyyy-mm-dd）
+  string overdue_time = 11;
+  //使用有效期
+  google.protobuf.Int32Value validity_day = 14;
+  // 服务商id
+  int64 provider_id = 15;
+  int64 buyer_id   = 55;  //买方id
+  //景区id
+  int64 scenic_id = 16;
+  //产品id
+  int64 pro_id = 17;
+  //商品id
+  int64 goods_id = 18;
+  //出票规则
+  int64 issue_id = 19;
+  //检票规则
+  int64 check_id = 20;
+  //退票规则
+  int64 retreat_id = 21;
+  //店铺id
+  int64 store_id = 22;
+  //实际售价
+  double selling_price = 23;
+  //退订人数
+  google.protobuf.Int32Value cancel_count = 24;
+  //入园时间
+  string enter_time = 25;
+  //票种
+  google.protobuf.Int32Value goods_type = 26;
+  //产品名称
+  string pro_name = 27;
+  //产品类型
+  google.protobuf.Int32Value pro_type = 28;
+  //产品id(价格id)
+  int64 ticket_type_id = 29;
+  //商品名称
+  string goods_name = 30;
+  //分时预约id
+  int64 time_share_id = 31;
+  //销售渠道
+  google.protobuf.Int32Value sale_channel = 32;
+  //实际售价
+  double real_price = 33;
+  //已检票人数
+  google.protobuf.Int32Value checked_num = 34;
+  //是否实名制
+  google.protobuf.Int32Value is_real_name = 35;
+  //是否首日激活，，1 - 首日激活，0 - 未激活
+  google.protobuf.Int32Value is_activate = 36;
+  //使用次数类型，每天 - 0，一共 - 1
+  google.protobuf.Int32Value use_type = 37;
+  //使用次数,0表示无限次
+  google.protobuf.Int32Value use_count = 38;
+  //可入园天数
+  google.protobuf.Int32Value available_days = 39;
+  //已使用次数
+  google.protobuf.Int32Value used_count = 40;
+  //已入园天数
+  google.protobuf.Int32Value used_days = 41;
+  //权益商品id
+  int64 rights_goods_id = 42;
+  //子产品id(价格拆分id)
+  int64 ticket_type_sub_id = 43;
+  //订单商品id
+  int64 order_product_id = 44;
+  // uuid
+  string uuid = 45;
+  // 购买旅游卡时，填写所用的旅游卡所属的身份证
+  string id_card = 46;
+  //一票多人非实名对应的游玩人数
+  int64 real_quantity = 47;
+  //出票子表信息
+  TicketIssuanceSubInfo ticketIssuanceSubInfo = 48;
+  // 订单总扣除库存
+  string num = 49;
+  // 库存批次号
+  string stock_batch_number = 50 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 51 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 52 [(validate.rules).string.min_len  =  0];
+  //票号
+  string id = 53;
+  //sign签名
+  string sign = 54;
+}
+
+
+//商品价格策略
+message SetSelfPrice {
+  // 商品价格详细信息
+  PriceInfo price = 1;
+  // 分销产品id
+  string unit_id = 2;
+  // 当前分销商（当前企业，代理关系的上级），不能为空
+  string distributor_id = 3;
+  // 景区商品id
+  string goods_id = 4;
+}
+
+//商品价格详细信息对象
+message PriceInfo {
+  // 销售价
+  double sale_price = 1;
+  // 组合销售价
+  double compose_price = 2;
+  // 佣金比例
+  double commission_rate = 3;
+  // 是否支持组合销售
+  bool is_compose = 4;
+  // 单买销售续费价
+  double sale_renew_price = 5;
+  // 用户单独购买的折扣
+  double discount = 6;
+  // 套餐中用户购买单品的折扣
+  double compose_discount = 7;
+  // 用户单独购买的续费折扣
+  double renew_discount = 8;
+}
+
+//总核销请求
+message VerificationRequest{
+  //二维码，票号，或身份证,人脸核销
+  TicketCheck ticketCheck = 1;
+  //人工核销
+  TicketList ticketList = 2;
+  //票号、二维码检票时接收检票终端（闸机、手持机）
+  TicketCheckInfo ticketCheckInfo = 3;
+  // 库存批次号
+  string stock_batch_number = 4 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 5 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 6 [(validate.rules).string.min_len  =  0];
+}
+
+//核销请求参数
+message TicketCheck {
+  // 检票数据（二维码，票号，或身份证） 必传
+  string way = 1;
+  // 景区id 必传
+  string scenic_id = 2;
+  // 检票点id 必传
+  string point_id = 3;
+  // 检票设备名称 必传
+  string equipment_name = 4;
+  // 检票设备类型 必传
+  string equipment_type = 5;
+  // 检票时间
+  string enter_time = 6;
+  // 检票设备id
+  string equipment_id = 7;
+  // 检票点名称
+  string point_name = 8;
+  // 姓名,身份证验证必传
+  string id_name = 9;
+  // 照片,身份证验证必传
+  string picture = 10;
+  // 检票类型：1.二维码，2.票号，3.身份证，4.人脸
+  google.protobuf.Int32Value check_type = 11;
+}
+
+//人工核销
+message TicketList {
+  // 票号列表数据
+  repeated ManualCheckNo data = 1;
+  // 操作用户id
+  string user_id = 2; // 操作用户id
+  // 操作用户名/手机号/昵称等
+  string username = 3;
+}
+
+//票号列表数据
+message ManualCheckNo {
+  // 票号
+  string ticket_number = 1; // 票号
+  // 核销信息列表
+  repeated ManualCheckMultiUnit data = 2;
+}
+
+//核销信息列表
+message ManualCheckMultiUnit {
+  // 核销人数
+  google.protobuf.Int32Value check_count = 1; // 核销人数:一票多人使用，一票一人只有一人
+  // 身份证号码
+  string id_card_number = 2; // 身份证号码
+  // 使用日期
+  string use_date = 3; // 使用日期
+}
+
+//票号、二维码检票时接收检票终端（闸机、手持机）
+message TicketCheckInfo {
+  // 检票序列号
+  string seq = 1; // 检票序列号
+  // 通过人数
+  google.protobuf.Int32Value pass_count = 2; // 通过人数
+}
+
+
+
+
+//`````````````````````````````````````价格策略··````````````````````````````````````````````//
+
+//商品价格策略
+message SetSelfPriceInfoRequest {
+  PriceInfoDetailsList priceInfoDetailsList = 1;
+}
+
+message PriceInfoDetailsList{
+  // 商品价格详细信息
+  PriceInfoDetails price= 1;
+  // 分销产品id
+  string unit_id = 2;
+  // 当前分销商（当前企业，代理关系的上级），不能为空
+  string distributor_id = 3;
+  // 景区商品id
+  string goods_id = 4;
+  // 库存批次号
+  string stock_batch_number = 5 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 6 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 7 [(validate.rules).string.min_len  =  0];
+  // 代理新增修改状态判断  0 新增  1 修改
+  string status = 8;
+  // 价格id
+  string  priceId = 9;
+  //修改时，新增的分组
+  repeated string add_group_id = 10;
+  //修改时，删除的分组
+  repeated string del_group_id = 11;
+  //新增时，选择的分组
+  repeated string group_id = 12;
+}
+
+//商品价格详细信息对象
+message PriceInfoDetails {
+  // 销售价
+  double sale_price = 1;
+  // 组合销售价
+  double compose_price = 2;
+  // 佣金比例
+  double commission_rate = 3;
+  // 是否支持组合销售
+  bool is_compose = 4;
+  // 单买销售续费价
+  double sale_renew_price = 5;
+  // 用户单独购买的折扣
+  double discount = 6;
+  // 套餐中用户购买单品的折扣
+  double compose_discount = 7;
+  // 用户单独购买的续费折扣
+  double renew_discount = 8;
+}
+
+//`````````````````````````````````````出票接口````````````````````````````````````````````//
+//出票信息
+message TicketIssuanceAlone{
+  repeated TicketDataAlone ticketData = 1;
+  // 短信接收方电话号码
+  string phone = 2;
+  // 渠道（0：H5，5：窗口）
+  string source_type = 3;
+  // 组订单id
+  string order_group_id = 4;
+
+}
+//出票信息
+message TicketDataAlone {
+  //游客身份信息
+  message BuyerInfo{
+    // 姓名
+    string id_name = 1;
+    // 身份证
+    string id_number = 2;
+  }
+
+  //出票子表信息
+  message TicketIssuanceSubInfo {
+    //出票表id
+    string ticket_issuance_id = 1;
+    //票种id
+    int64 ticket_type_id = 2;
+    //子票种id
+    int64 ticket_type_sub_id = 3;
+    //票种
+    google.protobuf.Int32Value goods_type = 4;
+    //可通过次数
+    google.protobuf.Int32Value pass_times = 5;
+    //已通过次数
+    google.protobuf.Int32Value passed_times = 6;
+    //每次通过次数
+    google.protobuf.Int32Value single_per_times = 7;
+    //是否有效：1 - 无效
+    google.protobuf.Int32Value is_valid = 8;
+    //入园开始时段HH:mm
+    string enter_begin_time = 9;
+    //入园结束时段HH:mm
+    string enter_end_time = 10;
+    //过期时间（yyyy-mm-dd）
+    string overdue_time = 11;
+    //使用有效期
+    google.protobuf.Int32Value validity_day = 12;
+    //已通过检票规则限制总通过次数
+    google.protobuf.Int32Value rule_passed_times = 13;
+    //商品id
+    int64 goods_id = 14;
+    //景区id
+    int64 scenic_id = 15;
+  }
+  //游客信息
+  repeated BuyerInfo buyer_info = 1;
+  // 批次id
+  repeated int64 batch_Id = 2;
+  // 订单号
+  string order_id = 3;
+  // 游玩人数
+  google.protobuf.Int32Value player_num = 4;
+  //类型：1 - 出票，2 - 退票
+  google.protobuf.Int32Value issuance_type = 5;
+  //状态 0：未核销 1 : 已核销 2：已过期 3：已完成 4：已退票
+  google.protobuf.Int32Value status = 6;
+  //检票类型
+  string check_type = 7;
+  //二维码
+  string print_encode = 8;
+  //入园开始时段HH:mm
+  string enter_begin_time = 9;
+  //入园结束时段HH:mm
+  string enter_end_time = 10;
+  //过期时间（yyyy-mm-dd）
+  string overdue_time = 11;
+  //使用有效期
+  google.protobuf.Int32Value validity_day = 14;
+  // 服务商id
+  int64 provider_id = 15;
+  //景区id
+  int64 scenic_id = 16;
+  //产品id
+  int64 pro_id = 17;
+  //商品id
+  int64 goods_id = 18;
+  //出票规则
+  int64 issue_id = 19;
+  //检票规则
+  int64 check_id = 20;
+  //退票规则
+  int64 retreat_id = 21;
+  //店铺id
+  int64 store_id = 22;
+  //实际售价
+  double selling_price = 23;
+  //退订人数
+  google.protobuf.Int32Value cancel_count = 24;
+  //入园时间
+  string enter_time = 25;
+  //票种
+  google.protobuf.Int32Value goods_type = 26;
+  //产品名称
+  string pro_name = 27;
+  //产品类型
+  google.protobuf.Int32Value pro_type = 28;
+  //产品id(价格id)
+  int64 ticket_type_id = 29;
+  //商品名称
+  string goods_name = 30;
+  //分时预约id
+  int64 time_share_id = 31;
+  //销售渠道
+  google.protobuf.Int32Value sale_channel = 32;
+  //实际售价
+  double real_price = 33;
+  //已检票人数
+  google.protobuf.Int32Value checked_num = 34;
+  //是否实名制
+  google.protobuf.Int32Value is_real_name = 35;
+  //是否首日激活，，1 - 首日激活，0 - 未激活
+  google.protobuf.Int32Value is_activate = 36;
+  //使用次数类型，每天 - 0，一共 - 1
+  google.protobuf.Int32Value use_type = 37;
+  //使用次数,0表示无限次
+  google.protobuf.Int32Value use_count = 38;
+  //可入园天数
+  google.protobuf.Int32Value available_days = 39;
+  //已使用次数
+  google.protobuf.Int32Value used_count = 40;
+  //已入园天数
+  google.protobuf.Int32Value used_days = 41;
+  //权益商品id
+  int64 rights_goods_id = 42;
+  //子产品id(价格拆分id)
+  int64 ticket_type_sub_id = 43;
+  //订单商品id
+  int64 order_product_id = 44;
+  // uuid
+  string uuid = 45;
+  // 购买旅游卡时，填写所用的旅游卡所属的身份证
+  string id_card = 46;
+  //一票多人非实名对应的游玩人数
+  int64 real_quantity = 47;
+  //出票子表信息
+  TicketIssuanceSubInfo ticketIssuanceSubInfo = 48;
+  // 订单总扣除库存
+  string num = 49;
+  // 库存批次号
+  string stock_batch_number = 50 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 51 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 52 [(validate.rules).string.min_len  =  0];
+}
+
+//`````````````````````````````````````核销接口··````````````````````````````````````````````//
+//总核销请求
+message VerificationInfoRequest{
+  //二维码，票号，或身份证,人脸核销
+  TicketCheckVerification ticketCheckVerification = 1;
+  //人工核销
+  TicketListVerification ticketListVerification = 2;
+  //票号、二维码检票时接收检票终端（闸机、手持机）
+  TicketCheckInfoVerification ticketCheckInfoVerification = 3;
+  // 库存批次号
+  string stock_batch_number = 4 [(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 5 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 6 [(validate.rules).string.min_len  =  0];
+}
+
+//核销请求参数
+message TicketCheckVerification {
+  // 检票数据（二维码，票号，或身份证） 必传
+  string way = 1;
+  // 景区id 必传
+  string scenic_id = 2;
+  // 检票点id 必传
+  string point_id = 3;
+  // 检票设备名称 必传
+  string equipment_name = 4;
+  // 检票设备类型 必传
+  string equipment_type = 5;
+  // 检票时间
+  string enter_time = 6;
+  // 检票设备id
+  string equipment_id = 7;
+  // 检票点名称
+  string point_name = 8;
+  // 姓名,身份证验证必传
+  string id_name = 9;
+  // 照片,身份证验证必传
+  string picture = 10;
+  // 检票类型：1.二维码，2.票号，3.身份证，4.人脸
+  google.protobuf.Int32Value check_type = 11;
+}
+
+//人工核销
+message TicketListVerification {
+  // 票号列表数据
+  repeated ManualCheckNoVerification data = 1;
+  // 操作用户id
+  string user_id = 2; // 操作用户id
+  // 操作用户名/手机号/昵称等
+  string username = 3;
+}
+
+//票号列表数据
+message ManualCheckNoVerification {
+  // 票号
+  string ticket_number = 1; // 票号
+  // 核销信息列表
+  repeated ManualCheckMultiUnitVerification data = 2;
+}
+
+//核销信息列表
+message ManualCheckMultiUnitVerification {
+  // 核销人数
+  google.protobuf.Int32Value check_count = 1; // 核销人数:一票多人使用，一票一人只有一人
+  // 身份证号码
+  string id_card_number = 2; // 身份证号码
+  // 使用日期
+  string use_date = 3; // 使用日期
+}
+
+//票号、二维码检票时接收检票终端（闸机、手持机）
+message TicketCheckInfoVerification {
+  // 检票序列号
+  string seq = 1; // 检票序列号
+  // 通过人数
+  google.protobuf.Int32Value pass_count = 2; // 通过人数
+}
+
+
+
+//订单主表信息
+message OrderInfoRequest {
+  // 主订单ID
+  string order_group_id = 1;
+  // 订单状态
+  string order_status = 2;
+  // 订单类型
+  string order_type = 3;
+  // 订单金额
+  double total_amount = 4;
+  // 支付金额
+  double pay_amount = 5;
+  // 支付方式
+  int32 pay_type = 6;
+  // 渠道
+  int32 source_type = 7;
+  // 库存凭证
+  string stock_certificate = 8;
+  // 结算交易号
+  string trade_no = 9;
+  // 下单用户ID
+  string user_id = 10;
+  // 下单用户名称
+  string username = 11;
+  // 支付时间
+  string pay_time = 12;
+  // 存证 id
+  string cert_id = 13;
+  // 购买时返回, 此次交易的 C 端区块链账号（退单时用）
+  string c_account = 14;
+  // 用户手机号码
+  string user_phone = 15;
+  // 账单状态
+  int32 bill_status = 16;
+
+  // 子订单信息
+  repeated OrderTabData orderTabData = 17;
+}
+
+
+// 子订单信息
+message OrderTabData {
+  // 订单编号
+  string order_id = 1;
+  // 订单类型
+  string order_type = 2;
+  // 卖方ID
+  int64 seller_id = 3;
+  // 卖方名称
+  string seller_name = 4;
+  // 订单金额
+  double total_amount = 5;
+  // 支付金额
+  double pay_amount = 6;
+  // 支付方式
+  int32 pay_type = 7;
+  // 渠道
+  int32 source_type = 8;
+  // 订单状态
+  string order_status = 9;
+  // 发票类型（不开发票、电子发票、纸质发票）
+  string bill_type = 10;
+  // 电子发票业务单据号
+  string bill_number = 11;
+  // 结算订单号
+  string trade_no = 12;
+  // 平台商户编号
+  string merchant_id = 13;
+  // 店铺ID
+  int64 store_id = 14;
+  // 代理商ID
+  int64 agent_id = 15;
+  // 代理商名称
+  string agent_name = 16;
+  // 佣金结算类型（1：现付空中分账，2：现付后结算，3：授信扣佣支付，4：授信后结算 ）
+  int32 commission_settled_type = 17;
+  // 下单用户ID
+  string user_id = 18;
+  // 下单用户名称
+  string username = 19;
+  // 支付时间
+  string pay_time = 20;
+  // 更新时间
+  string modify_time = 21;
+  // 是否删除
+  int32 is_delete = 22;
+  // 区块链ID
+  string tx_id = 23;
+  // 存证 id
+  string cert_id = 24;
+  // 购买时返回, 此次交易的 C 端区块链账号（退单时用）
+  string c_account = 25;
+  // 支付人数
+  int64 pay_people = 26;
+  // 下单用户昵称
+  string nickname = 27;
+  // 个人商户号
+  string merchant_no = 28;
+
+  repeated OrderProductTicketData orderProductTicketData = 29;
+}
+
+//普通订单产品表
+message OrderProductTicketData {
+  // 景区ID
+  int64 scenic_id = 1;
+  // 景区名称
+  string scenic_name = 2;
+  // 票种
+  int32 ticket_type = 3;
+  // 游玩时间
+  string day = 4;
+  // 分时预约ID
+  int64 time_share_id = 5;
+  // 分时预约时间
+  string time_share = 6;
+  // 套票专有属性，对应组合票产品ID
+  int64 parent_product_id = 7;
+  // 佣金类型
+  int32 commission_type = 8;
+  // 佣金比例
+  double commission_rate = 9;
+  // 佣金数值
+  double commission_amount = 10;
+  // 实际佣金
+  double actual_com_amount = 11;
+  // 技术服务费 (此字段无效，后结算无法结算此服务费，由结算系统收取通道服务费)
+  double service_charge = 12;
+  // 权益ID
+  int64 rights_id = 13;
+  // 账号
+  string bds_account = 14;
+  // 组织
+  string bds_org = 15;
+  // 权益商品ID
+  int64 rights_goods_id = 16;
+  // 票种id（价格id）
+  int64 ticket_type_id = 17;
+  // 子产品id（价格拆分id）
+  int64 ticket_type_sub_id = 18;
+  // 权益卡号
+  int64 card_id = 19;
+  // 一票多人非实名对应的游玩人数
+  int64 real_quantity = 20;
+   //普通订单产品票务信息
+   repeated OrderProductTicketRnData orderProductTicketRnData = 21;
+}
+
+message OrderProductTicketRnData {
+  //普通订单产品票务信息主键
+  int64 id = 1;
+  //订单商品ID
+  int64 order_product_id = 2;
+  //票号
+  string ticket_number = 3;
+  //票状态
+  int32 ticket_status = 4;
+  //佣金结算统计状态0：未结， 1：已结
+  int32 commission_settled_status = 5;
+  //是否上链(1是0否)
+  int32 is_chain = 6;
+  //账单状态 （ 1 待生成 2 生成中 3 已生成 ）
+  int32 bill_status = 7;
+  //出票类型 0、一票一人 1、一票多人
+  int32 issue_ticket_type = 8;
+}
+
+
+message OrderInfoResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+
+
+// 生成出票信息（票号/二维码/Sign签名）请求体
+message GenerateTicketIssuanceRequest {
+  // 扣减库存批次号信息
+  repeated StockBatchNumberData stockBatchNumberData = 1;
+  //生成票号信息数据集合
+  repeated GenerateTicketNumberInfoData generate_ticket_number_info_data = 2;
+   //出票方式（0一票一人，1一票多人）
+  int32 ticketIssuanceType = 3;
+  //订单号
+  string orderId = 4;
+}
+
+//扣减库存批次号信息
+message StockBatchNumberData{
+  // 账户
+  string account = 1 [(validate.rules).string.len =  42];
+  // 组织
+  string org = 2 [(validate.rules).string.min_len  =  0];
+  // 库存批次号
+  string stock_batch_number = 3 [(validate.rules).string.min_len  =  0];
+  //数量
+  uint32 number = 4;
+}
+
+
+//生成票号信息数据集合
+message GenerateTicketNumberInfoData{
+  //游玩时间
+  string enter_time = 1;
+  //游玩人数
+  google.protobuf.Int32Value player_num = 2;
+  //RSA证书
+  string certificate = 3;
+  //流水号（票号后四位）
+  string rand = 4;
+  //景区id
+  string scenic_id = 5;
+  //产品类型
+  google.protobuf.Int32Value pro_type = 6;
+  //分时预约id
+  google.protobuf.Int64Value time_share_id = 7;
+  //分时预约检票设置
+  google.protobuf.Int32Value time_share_book = 8;
+  //分时预约开始时间
+  string begin_time = 9;
+  //分时预约结束时间
+  string end_time = 10;
+  //检票点id集合
+  repeated google.protobuf.Int64Value check_point_ids = 11;
+  //随机数(8位)
+  string uuid = 12;
+}
+
+message GenerateTicketIssuanceResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;   // 响应描述
+  GenerateData data = 3;
+  message GenerateData{
+    string txId = 1; //交易hash
+    //生成票号/二维码/签名数据集合
+    repeated GenerateTicketIssuanceData generate_ticket_issuance_data = 2;
+  }
+}
+
+message GenerateTicketIssuanceData{
+  //票号
+  string ticket_number = 1;
+  //二维码
+  string print_encode = 2;
+  //签名
+  string sign = 3;
+}
+
+
+// -------- --------- 迭代二 -------------------------
+
+message DistributionOrderInfoRequest {
+  //组订单id
+  string order_group_id = 1;
+  //订单状态
+  string order_status = 2;
+  //订单类型
+  string order_type = 3;
+  //订单金额
+  double total_amount = 4;
+  //支付方式
+  double pay_amount = 5;
+  //支付方式
+  int32 pay_type = 6;
+  //渠道
+  int32 source_type = 7;
+  //库存凭证
+  string stock_certificate = 8;
+  //结算交易号
+  string trade_no = 9;
+  //下单用户ID
+  string user_id = 10;
+  //下单用户名称
+  string username = 11;
+  //支付时间
+  string pay_time = 12;
+  //凭证
+  string cert_id = 13;
+  //购买时返回, 此次交易的 C 端区块链账号（退单时用）
+  string c_account = 14;
+  //用户手机
+  string user_phone = 15;
+  //账单状态 （ 1 待生成 2 生成中 3 已生成 ）
+  int32 bill_status = 16;
+  //交易hash(区块链)
+  string tx_id = 17;
+
+  // 子订单信息(B端)
+  repeated OrderTabToBData orderTabToBData = 18;
+  //分销单信息
+  repeated OrderTabDistributeData orderTabDistributeData = 19;
+}
+
+message OrderTabToBData {
+  //订单编号
+  string order_id = 1;
+  //订单类型
+  string order_type = 2;
+  //卖方ID
+  int64 seller_id = 3;
+  //卖方名称
+  string seller_name = 4;
+  //订单金额
+  double total_amount = 5;
+  //支付金额
+  double pay_amount = 6;
+  //支付方式
+  int32 pay_type = 7;
+  //渠道
+  int32 source_type = 8;
+  //订单状态
+  string order_status = 9;
+  //发票类型（不开发票、电子发票、纸质发票）
+  string bill_type = 10;
+  //电子发票业务单据号
+  string bill_number = 11;
+  //结算订单号
+  string trade_no = 12;
+  //平台商户编号
+  string merchant_id = 13;
+  //店铺ID
+  int64 store_id = 14;
+  //代理商ID
+  int64 agent_id = 15;
+  //代理商名称
+  string agent_name = 16;
+  //佣金结算类型（1：现付空中分账，2：现付后结算，3：授信扣佣支付，4：授信后结算 ）
+  int32 commission_settled_type = 17;
+  //下单用户ID
+  string user_id = 18;
+  //下单用户名称
+  string username = 19;
+  //支付时间
+  string pay_time = 20;
+  //hash值
+  string tx_id = 21;
+  //存证 id
+  string cert_id = 22;
+  // 购买时返回, 此次交易的 C 端区块链账号（退单时用）
+  string c_account = 23;
+  //下单用户昵称
+  string nickname = 24;
+  //个人商户号
+  string merchant_no = 25;
+  //是否上链：1-上链；0-未上链
+  int32 is_chain = 26;
+}
+
+message OrderTabDistributeData {
+  //订单ID
+  string order_id = 1;
+  //买方公司ID
+  int64 buyer_id = 2;
+  //买方公司名称
+  string buyer_name = 3;
+  //卖方公司ID
+  int64 seller_id = 4;
+  //卖方公司名称
+  string seller_name = 5;
+  //服务商ID
+  int64 service_provider_id = 6;
+  //服务商名称
+  string service_provider_name = 7;
+  //是否上链
+  int32 is_bc = 8;
+  //卖方（库存扣减方）
+  string seller_account                                 = 9 [(validate.rules).string.len =  42];
+  //卖方（库存扣减方）
+  string seller_org                                     = 10 [(validate.rules).string.min_len  =  0];
+  //买方（库存接收方）
+  string buyer_account                                  = 11 [(validate.rules).string.len =  42];
+  //买方（库存接收方）
+  string buyer_org                                      = 12 [(validate.rules).string.min_len  =  0];
+
+//票务分销订单商品表
+repeated OrderProductDistributeData orderProductDistributeData = 13;
+}
+
+
+message OrderProductDistributeData {
+  //景区ID
+  int64 scenic_id = 1;
+  //景区名称
+  string scenic_name = 2;
+  //分销产品配置ID
+  int64 distributor_ticket_stock_id = 3;
+  //批次号
+  int64 batch_id = 4;
+  //票种
+  int32 ticket_type = 5;
+  //入园开始时间
+  string day_begin = 6;
+  //入园结束时间
+  string day_end = 7;
+  //分时预约时间
+  string time_share = 8;
+  //分时预约ID
+  string time_share_id = 9;
+  //可用数量
+  int32 usable_num = 10;
+  //订单商品ID
+  int64 order_product_id = 11;
+  //订单ID
+  string order_id = 12;
+  //产品ID
+  int64 product_id = 13;
+  //产品名称
+  string product_name = 14;
+  //产品skuID
+  int64 product_sku_id = 15;
+  //产品sku名称
+  string product_sku_name = 16;
+  //产品价格
+  double product_price = 17;
+  //购买数量
+  int32 num = 18;
+  //产品类型
+  int32 product_type = 19;
+   //批次号(区块链)
+  string stock_batch_number = 20 [(validate.rules).string.min_len  =  0];
+  //预授信本金比例
+  string available_ratio = 21;
+  //冻结数量
+  string exchange_freeze_num = 22;
+  //当前批次可用的总数
+  string available_total_num = 23;
+}
+
+message DistributionOrderInfoResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+//`````````````````````````````````````C端窗口退票··````````````````````````````````````````````//
+message BlockOrderRefundRequest{
+    //退订单子表信息
+    BlockRefundInfo blockRefundInfo = 1;
+    //退订单产品表
+    repeated BlockOrderRefundProductTicket blockOrderRefundProductTicket = 2;
+}
+
+message BlockOrderRefundProductTicket {
+  //退订单ID
+  string refund_id = 2;
+  //订单商品ID
+  int64 order_product_id = 3;
+  //票号
+  string ticket_number = 4;
+  //产品ID
+  int64 product_id = 5;
+  //产品名称
+  string product_name = 6;
+  // 产品skuID
+  int64 product_sku_id = 7;
+  //商品类型
+  int32 product_type = 8;
+  //票种
+  int32 ticket_type = 9;
+  //入园时间
+  string day = 10;
+  //实名人
+  string name = 11;
+  //身份证号码
+  string identity = 12;
+  //销售渠道
+  int32 source_type = 13;
+  //退款金额
+  string refund_amount = 14;
+  //退款手续费
+  string refund_fee = 15;
+  //退款数量
+  int32 refund_num = 16;
+    //库存扣减详情
+  repeated DistributorTicketStockTransferInfoRefund distributorTicketStockTransferInfo = 17;
+}
+message DistributorTicketStockTransferInfoRefund{
+    uint32 number=1;//数量
+    string batchId=2;//批次id
+    string stockBatchNumber = 3;//区块链库存批次
+    string account = 4 [(validate.rules).string.len =  42];//钱包地址
+    string org = 5 [(validate.rules).string.min_len  =  0];//组织id
+}
+
+message BlockRefundInfo {
+  // 退订单ID
+  string refund_id = 1;
+  // 订单编号
+  string order_id = 2;
+  // 退款金额
+  double refund_amount = 3;
+  // 退款手续费
+  double refund_fee = 4;
+  // 退票状态（已退、退票中）
+  string refund_status = 5;
+  // 退票类别（网上自己退订、后台强制退订等）
+  int32 refund_type = 6;
+  // 退款结算交易单号
+  string trade_no = 7;
+  // 退款时间
+  string refund_time = 8;
+  // 退款原因
+  string remark = 9;
+  // 退款失败原因
+  string fail_message = 10;
+  // 佣金结算统计状态（1：线上结算，2：线下未结算，3：线下已结算）
+  int32 commission_settled_status = 11;
+  // 退单库存凭证
+  string stock_certificate = 12;
+  // 商品名称
+  string product_sku_name = 13;
+  // 退款人id
+  int64 user_id = 14;
+  // 退款人名称
+  string username = 15;
+  // 存证 id
+  string cert_id = 16;
+  // 区块链hash值
+  string tx_id = 17;
+  // 账单状态
+  int32 bill_status = 18;
+   // 主订单编号
+  string order_group_id = 19;
+}
+
+
+message BlockOrderRefundResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+
+
+//`````````````````````````````````````B2B分销退单··``````````````````````````````````````````
+message DistributeRefundCreateRequest{
+  repeated OrderRefundGroup order_refund_group                            = 1;  //组退订表信息(此信息目前无实际作用),可用于以后分销商一次性向多个供应商进货/退货
+  repeated OrderRefund order_refund                                       = 2;  //退订主表信息
+  repeated OrderRefundProductDistribute order_refund_product_distribute   = 3;  //退订产品信息
+
+}
+
+//目前的场景只有一个
+message OrderRefundGroup{
+  string order_refund_group_id        = 1;    //组退单id
+  string order_group_id               = 2;    //组订单id
+  string order_refund_id              = 3;    //退单id
+  string create_time                  = 4;    //创建时间
+}
+
+//目前的场景只有一个
+message OrderRefund{
+  string refund_id                                      = 1;    //退单id
+  string order_id                                       = 2;    //订单id
+  double refund_amount                                  = 3;    //退款金额
+  double refund_fee                                     = 4;    //退款手续费
+  string refund_status                                  = 5;    //退订状态
+  string refund_type                                    = 6;    //退订类别
+  string trade_no                                       = 7;    //结算单号
+  string refund_time                                    = 8;    //退订时间
+  string create_time                                    = 9;    //创建时间
+  string remark                                         = 10;   //退订原因
+  string fail_message                                   = 11;   //退款失败原因
+  string user_id                                        = 12;   //退款人id
+  string username                                       = 13;   //退款人名称
+  string commission_settled_status                      = 14;   //佣金结算状态
+  string stock_certificate                              = 15;   //库存凭证
+  string product_sku_name                               = 16;   //票务商品名称
+  string cert_id                                        = 17;   //存证id
+  string tx_id                                          = 18;   //区块链交易hash
+  string seller_account                                 = 19;   //卖方;注：这是退单，所以是库存接收方
+  string seller_org                                     = 20;   //卖方;注：这是退单，所以是库存接收方
+  string buyer_account                                  = 21;   //买方;注：这是退单，所以是库存扣减方
+  string buyer_org                                      = 22;   //买方;注：这是退单，所以是库存扣减方
+}
+
+//目前的场景可能是多个
+message OrderRefundProductDistribute{
+  string refund_id                      = 1;    //退单id
+  string order_product_id               = 2;    //这个是关联order_product_ticket信息的
+  int32 num                             = 3;    //数量
+  string product_id                     = 4;    //分销产品id
+  string product_name                   = 5;    //分销产品名称
+  string product_sku_id                 = 6;    //票务商品id
+  string product_type                   = 7;    //产品类型
+  string product_price                  = 8;    //产品价格
+  string day_begin                      = 9;    //入园开始时间
+  string day_end                        = 10;   //入园结束时间
+  string time_share                     = 11;   //分时预约时间
+  string scenic_id                      = 12;   //景区id
+  string scenic_name                    = 13;   //景区名称
+  string batch_id                       = 14;   //批次id
+  string distribute_ticket_stock_id     = 15;   //分销产品配置id
+  string time_share_id                  = 16;   //分时预约id
+}
+
+
+message DistributeRefundCreateResponse{
+  int64  code = 1;  // 响应码OrderProductDistributeData
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+
+//------- 获取溯源信息-------
+
+
+message QueryTicketOptRecordsRequest{
+  string ticket_id = 1;
+}
+
+message QueryTicketOptRecordsResponse{
+  repeated TicketOperatingRecord ticket_operating_record = 1;
+}
+
+message TicketOperatingRecord{
+  int32  opt_type = 1; //操作类型 1=>门票铸造 2=>价格策略设置 3=>门票采购 4 => 门票购买 5 => 门票核销 6 => 门票退订 7 =>门票采购退单 8=>门票过期
+  string  miner = 2; //铸造者
+  string  sender_id = 3; //发送者
+  string  receiver_id = 4; //接受者
+  int64 batch_id = 5; //库存批次号
+  int32  tickets_status = 6; //票状态
+  string order_number = 7; //订单id
+  string refund_number = 8; //退单id
+  string tx_hash = 9; //交易hash
+  int64  trigger_at = 10; //触发时间
+}
+
+
+
+//------- 还款确认回调-------
+message RepayRollBackRequest{
+
+  message RepayRollBackInfo{
+    string batchId=1 [(validate.rules).string.min_len  =  0];//批次id
+    string stockBatchNumber = 2 [(validate.rules).string.min_len  =  0];//区块链库存批次
+    string account = 3 [(validate.rules).string.len =  42];           //账户
+    string org     = 4 [(validate.rules).string.min_len  =  0];           //组织
+    //当前批次可用的总数
+    string available_total_num  = 5 [(validate.rules).string.min_len  =  0];
+    //主订单号
+    string orderGroupId  = 6 [(validate.rules).string.min_len  =  0];
+    //当前期数
+    string periods = 7 [(validate.rules).string.min_len  =  0];
+    //总期数
+    string total_periods = 8 [(validate.rules).string.min_len  =  0];
+    //结算交易号
+    string trade_no = 9 [(validate.rules).string.min_len  =  0];
+    //当前还款金额
+    string amount = 10 [(validate.rules).string.min_len  =  0];
+    //总还款金额
+    string total_repayment = 11 [(validate.rules).string.min_len  =  0];
+  }
+
+  repeated RepayRollBackInfo data = 1;
+
+}
+
+message RepayRollBackResponse{
+  int64  code = 1;  // 响应码OrderProductDistributeData
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+message StockBatchInfoUpdateRequest{
+  // 库存批次号
+  string stock_batch_number = 1[(validate.rules).string.min_len  =  0];
+  // 账户
+  string account = 2[(validate.rules).string.len =  42];
+  // 组织
+  string org = 3[(validate.rules).string.min_len  =  0];
+  // 购买有效开始时间
+  string purchase_begin_time = 4;
+  // 购买有效结束时间
+  string purchase_end_time = 5;
+  // 入园有效开始时间
+  string enter_begin_time = 6;
+  // 入园有效结束时间
+  string enter_end_time = 7;
+}
+
+message StockBatchInfoUpdateResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  TxData data = 3;
+}
+
+
+//------- 获取库存操作记录-------
+
+
+message QueryStockOptRecordsRequest{
+   // 库存批次号
+   string stock_batch_number = 1[(validate.rules).string.min_len  =  0];
+   // 账户
+   string account = 2[(validate.rules).string.len =  42];
+   // 组织
+   string org = 3[(validate.rules).string.min_len  =  0];
+}
+
+message QueryStockOptRecordsResponse{
+  int64  code = 1;  // 响应码OrderProductDistributeData
+  string msg = 2;  // 响应描述
+  repeated StockOperatingRecord stock_operating_record = 3;
+}
+
+
+message StockOperatingRecord{
+  int32  opt_type = 1; //操作类型 1=>库存创建 9=>库存修改
+  string tx_hash = 2; //交易hash
+  int64  trigger_at = 3; //触发时间
+}
+
+
+message ProjectBiddingResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  ProjectBiddingData data = 3;
+}
+
+message ProjectBiddingData{
+  // 公告
+  ProjectBiddingHash projectBiddingHash = 1;
+}
+
+message ProjectBiddingHash{
+  int64 project_id  = 1;
+  string tx_hash    = 2;
+}
+
+message InstrumentTicketResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  InstrumentTicketData data = 3;
+}
+
+message InstrumentTicketData{
+  // 票务标的
+  InstrumentTicketHash instrumentTicketHash = 1;
+}
+
+message InstrumentTicketHash{
+  int64 instrument_id = 1;
+  string tx_hash    = 2;
+  int64 blockHeight = 3; //区块高度
+  int64 onChainTime = 4; // 时间戳
+  string chainName = 5;
+}
+
+// 标的竞价规则
+message InstrumentBiddingRule {
+  // 标的ID
+  int64 instrument_id = 1;
+  // 拍次 (1拍，2拍，3拍)
+  int32 instrument_grade = 2;
+  // 竞价开始时间
+  string bidding_start_time = 3;
+  // 竞价结束时间
+  string bidding_end_time = 4;
+  // 延时时间（秒）
+  int64 bidding_delay_time = 5;
+  // 拍卖类型
+  string bidding_type = 6;
+  // 拍卖起始价
+  string bidding_start_price = 7;
+  // 成交规则
+  int32 bidding_deal_rule = 8;
+  // 竞拍保证金
+  string bidding_deposit = 9;
+  // 加价或减价幅度
+  string bidding_changes = 10;
+  // 总数量
+  int64 instrument_quantity = 11;
+  // 其他规则描述
+  string bidding_description = 12;
+  // 市场指导价
+  string market_price = 13;
+  // 保证金比例
+  string bidding_deposit_ratio = 14;
+  // 拍卖底价：针对降价拍
+  string lowest_price = 15;
+}
+
+// 标的竞价销售
+message InstrumentBiddingSales {
+  // 标的ID
+  int64 instrument_id = 1;
+  // 围观次数
+  int64 instrument_views = 2;
+  // 报名数
+  int64 registration_quantity = 3;
+  // 出价数量
+  int64 bid_quantity = 4;
+  // 当前价
+  string current_price = 5;
+  // 当前剩余数量，针对即刻拍
+  int64 current_remaining_quantity = 6;
+  // 预计开始时间
+  string estimated_start_time = 7;
+  // 预计结束时间
+  string estimated_end_time = 8;
+}
+
+//  标的信息
+message Instrument {
+  // 标的ID
+  int64 instrument_id = 1;
+  // 项目ID
+  int64 project_id = 2;
+  // 父标的ID
+  int64 parent_instrument_id = 3;
+  // 企业ID
+  int64 company_id = 4;
+  // 资产类型
+  string asset_type = 5;
+  // 标的类型
+  string instrument_type = 6;
+  // 标的物名称
+  string instrument_name = 7;
+  // 宣传图片(文件IDs)
+  string instrument_images = 8;
+  // 宣传视频
+  int64 instrument_video = 9;
+  // 标的描述
+  string instrument_description = 10;
+  // 标的附件(文件IDs)
+  string instrument_annex = 11;
+  // 联系人名称
+  string contact_name = 12;
+  // 联系人电话
+  string contact_phone = 13;
+  // 标的状态
+  string instrument_status = 14;
+  // 标的规则
+  InstrumentBiddingRule instrument_bidding_rule = 15;
+  // 标的销售
+  InstrumentBiddingSales instrument_bidding_sales = 16;
+}
+
+// 标的票务信息
+message InstrumentTicketRequest {
+  // 标的ID
+  int64 instrument_id = 1;
+  // 景区ID
+  int64 scenic_id = 2;
+  // 商品ID
+  int64 goods_id = 3;
+  // 产品类型
+  string product_type = 4;
+  // 票种
+  string ticket_type = 5;
+  // 景区所属省
+  int32 scenic_province_code = 6;
+  // 景区所属市
+  int32 scenic_city_code = 7;
+  // 景区所属区
+  int32 scenic_area_code = 8;
+  // 购买开始时间
+  string buy_start_date = 9;
+  // 购买结束时间
+  string buy_end_date = 10;
+  // 入园开始时间
+  string use_start_date = 11;
+  // 入园结束时间
+  string use_end_date = 12;
+  // 标地
+  Instrument Instrument = 13;
+  // 项目上链唯一id
+  string project_chain_unique_id = 14;
+}
+
+//公告项目信息
+message ProjectBiddingRequest {
+  //项目id
+  int64 project_id = 1;
+  // 父项目ID
+  int64 parent_project_id = 2;
+  // 项目类型
+  string project_type = 3;
+  // 项目编号
+  string project_number = 4;
+  // 交易所ID
+  int64 exchange_id = 5;
+  // 企业ID
+  int64 company_id = 6;
+  // 项目名称
+  string project_name = 7;
+  // 1拍，2拍，3拍
+  int32 project_grade = 8;
+  // 项目详情
+  string project_description = 9;
+  // 附件的文件ID集合,逗号隔开
+  string project_annex = 10;
+  // 项目状态
+  string project_status = 11;
+  // 节点描述 审核备注
+  string node_description = 12;
+  // 项目上链唯一id
+  string project_chain_unique_id = 13;
+  // 审核时间
+  int64 review_time =14;
+}
+
+
+message QueryAnnouncementOptRecordsRequest {
+  //项目id
+  int64 project_id = 1;
+}
+
+
+message QueryAnnouncementOptRecordsResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  repeated  AnnouncementOptData data = 3;  //公告操作信息
+}
+
+
+message AnnouncementOptData {
+  //项目id
+  int64 project_id = 1;
+   // 项目名称
+  string project_name = 2;
+  // 项目状态
+  string project_status = 3;
+  // 审核时间
+  int64 review_time =4;
+  //交易hash
+  string tx_hash =5;
+  // 节点描述 审核备注
+  string node_description = 6;
+  //标的信息
+  repeated InstrumentInfo instruments = 7;
+}
+
+
+message InstrumentInfo {
+  // 标的ID
+  int64 instrument_id = 1;
+  // 标的物名称
+  string instrument_name = 2;
+  //交易hash
+  string tx_hash =3;
+}
+
+
+
+
+
+message MarginOrderRequest {
+    string exchangeId = 1 [(validate.rules).string.min_len = 0]; // 交易所ID
+    string exchangeName = 2 [(validate.rules).string.min_len = 0]; // 交易所名称
+    string instrumentId = 3 [(validate.rules).string.min_len = 0]; // 标的物ID
+    string instrumentName = 4 [(validate.rules).string.min_len = 0]; // 标的物名称
+    string projectId = 5 [(validate.rules).string.min_len = 0]; // 公告ID
+    string projectName = 6 [(validate.rules).string.min_len = 0]; // 公告名称
+    string bidbondAmount = 7 [(validate.rules).string.min_len = 0]; // 保证金数额
+    string outTradeNo = 8 [(validate.rules).string.min_len = 0]; // 授权号
+    string tradeNo = 9 [(validate.rules).string.min_len = 0]; // 授权明细号
+    string sellerId = 10 [(validate.rules).string.min_len = 0]; // 委托方ID
+    string sellerName = 11 [(validate.rules).string.min_len = 0]; // 委托方名称
+    string buyerId = 12 [(validate.rules).string.min_len = 0]; // 竞买人ID
+    string buyerName = 13 [(validate.rules).string.min_len = 0]; // 竞买人名称
+    string createTime = 14 [(validate.rules).string.min_len = 0]; // 订单创建时间
+    string orderId = 15 [(validate.rules).string.min_len = 0]; // 订单号（新增）
+}
+
+
+message MarginOrderResponse {
+    int64  code = 1;  // 响应码
+    string msg = 2;  // 响应描述
+    ExchangeTxData data = 3;
+}
+
+
+message MarginOrderOverRequest {
+    string exchangeId = 1 [(validate.rules).string.min_len = 0]; // 交易所ID
+    string exchangeName = 2 [(validate.rules).string.min_len = 0]; // 交易所名称
+    string instrumentId = 3 [(validate.rules).string.min_len = 0]; // 标的物ID
+    string instrumentName = 4 [(validate.rules).string.min_len = 0]; // 标的物名称
+    string projectId = 5 [(validate.rules).string.min_len = 0]; // 公告ID
+    string projectName = 6 [(validate.rules).string.min_len = 0]; // 公告名称
+    string bidbondAmount = 7 [(validate.rules).string.min_len = 0]; // 保证金数额
+    string outTradeNo = 8 [(validate.rules).string.min_len = 0]; // 授权号
+    string tradeNo = 9 [(validate.rules).string.min_len = 0]; // 授权明细号
+    string sellerId = 10 [(validate.rules).string.min_len = 0]; // 委托方ID
+    string sellerName = 11 [(validate.rules).string.min_len = 0]; // 委托方名称
+    string buyerId = 12 [(validate.rules).string.min_len = 0]; // 竞买人ID
+    string buyerName = 13 [(validate.rules).string.min_len = 0]; // 竞买人名称
+    string bidNumber = 14 [(validate.rules).string.min_len = 0]; // 竞买号
+    string paymentTradeNo = 15 [(validate.rules).string.min_len = 0]; // 支付号
+    string paymentTime = 16 [(validate.rules).string.min_len = 0]; // 支付时间
+}
+
+message MarginOrderOverResponse {
+    int64  code = 1;  // 响应码
+    string msg = 2;  // 响应描述
+    ExchangeTxData data = 3;
+}
+
+message ExchangeTxData {
+    string txId = 1; //交易hash
+}
+
+
+// 信用评估结果上链请求
+message CreditAssessmentRequest {
+  string legal_name = 1; // 企业名称
+  string registration_number = 2; // 统一信用代码
+  string score = 3; // 企业累计得分
+  string level = 4; // 等级
+  string assessment_time = 5; // 更新时间
+}
+
+
+
+// 贷款申请上链请求
+message LoanRequestRequest {
+  string application_no = 1; // 贷款申请单号
+  string legal_name = 2; // 企业名称
+  string debtor_registration_number = 3; // 统一信用代码（旅行商）
+  string owners_equity = 4; // 所有者权益（万元）
+  string business_scope = 5; // 许可经营范围
+  string business_economic_type = 6; // 企业经济类型
+  string business_phone = 7; // 企业电话
+  string business_fax = 8; // 企业传真
+  string business_email = 9; // 企业邮箱
+  string creditor_name = 10; // 申请金融机构
+  string creditor_registration_number = 11; // 统一信用代码（金融机构）
+  string financing_purpose = 12; // 融资用途
+  string level = 13; // 信用等级
+  string proposed_credit_limit = 14; // 拟授信额度，使用int64以保证足够大的数值范围
+  string create_time = 15; // 申请时间
+}
+
+
+// 贷款审核不通过上链请求
+message LoanReviewDeniedRequest {
+  string applicationNo = 1; // 贷款申请单号
+  string legalName = 2; // 企业名称
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string ownersEquity = 4; // 所有者权益（万元）
+  string businessScope = 5; // 许可经营范围
+  string businessEconomicType = 6; // 企业经济类型
+  string businessPhone = 7; // 企业电话
+  string businessFax = 8; // 企业传真
+  string businessEmail = 9; // 企业邮箱
+  string creditorName = 10; // 申请金融机构
+  string creditorRegistrationNumber = 11; // 统一信用代码（金融机构）
+  string financingPurpose = 12; // 融资用途
+  string level = 13; // 信用等级
+  string proposedCreditLimit = 14; // 拟授信额度
+  string createTime = 15; // 申请时间
+  string creditStatus = 16; // 审批结果
+  string creditAuditRemark = 17; // 不通过原因
+  string modifyTime = 18; // 审批时间
+}
+
+
+// 贷款审核通过上链请求
+message LoanReviewApprovedRequest {
+  string applicationNo = 1; // 贷款申请单号
+  string legalName = 2; // 企业名称
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string ownersEquity = 4; // 所有者权益（万元）
+  string businessScope = 5; // 许可经营范围
+  string businessEconomicType = 6; // 企业经济类型
+  string businessPhone = 7; // 企业电话
+  string businessFax = 8; // 企业传真
+  string businessEmail = 9; // 企业邮箱
+  string creditorName = 10; // 申请金融机构
+  string creditorRegistrationNumber = 11; // 统一信用代码（金融机构）
+  string financingPurpose = 12; // 融资用途
+  string level = 13; // 信用等级
+  string proposedCreditLimit = 14; // 拟授信额度
+  string createTime = 15; // 申请时间
+  string creditStatus = 16; // 审批结果
+  string creditLine = 17; // 最大预授信额度（元）
+  string expiresTime = 18; // 借款期限
+  string repaymentType = 19; // 还款方式
+  string rate = 20; // 年利率
+  string periods = 21; // 期数
+  string monthlyRepaymentDay = 22; // 每月还款日期
+  string overdueRate = 23; // 逾期日利率
+  string repaymentName = 24; // 收款单位名称
+  string repaymentBankAccount = 25; // 收款单位银行账号
+  string repaymentBankName = 26; // 收款单位开户银行名称
+  string modifyTime = 27; // 审批时间
+}
+
+
+
+
+// 贷款审核不通过后再次申请上链请求
+message LoanReapplyRequest {
+  string application_no = 1; // 贷款申请单号
+  string legal_name = 2; // 企业名称
+  string debtor_registration_number = 3; // 统一信用代码（旅行商）
+  string owners_equity = 4; // 所有者权益（万元）
+  string business_scope = 5; // 许可经营范围
+  string business_economic_type = 6; // 企业经济类型
+  string business_phone = 7; // 企业电话
+  string business_fax = 8; // 企业传真
+  string business_email = 9; // 企业邮箱
+  string creditor_name = 10; // 申请金融机构
+  string creditor_registration_number = 11; // 统一信用代码（金融机构）
+  string financing_purpose = 12; // 融资用途
+  string level = 13; // 信用等级
+  string proposed_credit_limit = 14; // 拟授信额度，使用int64以保证足够大的数值范围
+  string create_time = 15; // 申请时间
+}
+
+// 借款申请上链请求
+message LoanApplicationRequest {
+  string outTradeNo = 1; // 商户订单号
+  string loanAmount = 2; // 申请借款金额（元）
+  string debtorName = 3; // 旅行商
+  string debtorRegistrationNumber = 4; // 统一信用代码（旅行商）
+  string creditorName = 5; // 申请金融机构
+  string creditorRegistrationNumber = 6; // 统一信用代码（金融机构）
+  string exchangeName = 7; // 交易所
+  string exchangeRegistrationNumber = 8; // 统一信用代码（交易所）
+  string receiverCorporateName = 9; // 收款单位名称
+  string receiverBankAccountNo = 10; // 收款单位银行账号
+  string receiverBankName = 11; // 收款单位开户银行名称
+  string tradeOrderFileUrl = 12; // 交易订单凭证
+  string cautionMoneyFileUrl = 13; // 存缴履约保证金凭证
+  string paymentBookFileUrl = 14; // 受托支付单凭证
+  string applyTime = 15; // 申请时间
+}
+
+
+
+// 借款审批通过打款信息上链请求
+message LoanApprovalPaymentRequest {
+  string outTradeNo = 1; // 商户订单号
+  string loanAmount = 2; // 申请借款金额（元）
+  string debtorName = 3; // 旅行商
+  string debtorRegistrationNumber = 4; // 统一信用代码（旅行商）
+  string creditorName = 5; // 申请金融机构
+  string creditorRegistrationNumber = 6; // 统一信用代码（金融机构）
+  string exchangeName = 7; // 交易所
+  string exchangeRegistrationNumber = 8; // 统一信用代码（交易所）
+  string receiverCorporateName = 9; // 收款单位名称
+  string receiverBankAccountNo = 10; // 收款单位银行账号
+  string receiverBankName = 11; // 收款单位开户银行名称
+  string tradeOrderFileUrl = 12; // 交易订单凭证
+  string cautionMoneyFileUrl = 13; // 存缴履约保证金凭证
+  string paymentBookFileUrl = 14; // 受托支付单凭证
+  string payBankSlipFileUrl = 15; // 银行水单图片
+  string payBankTradeNo = 16; // 付款单位银行交易流水号
+  string payCorporateName = 17; // 付款单位名称
+  string payBankAccountNo = 18; // 付款单位银行账号
+  string payBankName = 19; // 付款单位开户银行名称
+  string payAuditTime = 20; // 审批时间
+}
+
+
+
+// 生成还款单上链请求
+message PaymentScheduleGenerationRequest {
+  string outTradeNo = 1; // 商户订单号
+  string debtorName = 2; // 旅行商
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string creditorName = 4; // 金融机构
+  string creditorRegistrationNumber = 5;// 统一信用代码（金融机构）
+  string amount = 6; // 贷款金额
+  string repaymentType = 7; // 还款方式
+  string rate = 8; // 年利率
+  string createTime = 9; // 创建时间
+}
+
+
+
+// 申请还款上链请求
+message RepaymentApplicationRequest {
+  string outTradeNo = 1; // 商户订单号
+  string debtorName = 2; // 旅行商
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string creditorName = 4; // 金融机构
+  string creditorRegistrationNumber = 5; // 统一信用代码（金融机构）
+  string amount = 6; // 贷款金额
+  string principal = 7; // 本金余额
+  string repaymentType = 8; // 还款方式
+  string rate = 9; // 年利率
+  string periods = 10; // 期数
+  string repaymentDate = 11; // 当期还款日
+  string isOverdue = 12; // 是否逾期
+  string penaltyInterest = 13; // 逾期金额
+  string repaymentAmount = 14; // 当期还款金额
+  string bankSlip = 15; // 银行水单图片
+  string payBankTradeNo = 16; // 银行交易流水号
+  string payUnitName = 17; // 付款单位名称
+  string payBankAccountNo = 18; // 付款单位银行账号
+  string payBankName = 19; // 付款单位开户银行名称
+  string repaymentName = 20; // 收款单位名称
+  string repaymentBankAccount = 21; // 收款单位银行账号
+  string repaymentBankName = 22; // 收款单位开户银行名称
+  string applyTime = 23; // 申请时间
+
+}
+
+
+// 还款通过上链请求
+message RepaymentApprovedRequest {
+  string outTradeNo = 1; // 商户订单号
+  string debtorName = 2; // 旅行商
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string creditorName = 4; // 金融机构
+  string creditorRegistrationNumber = 5; // 统一信用代码（金融机构）
+  string amount = 6; // 贷款金额
+  string principal = 7; // 本金余额
+  string repaymentType = 8; // 还款方式
+  string rate = 9; // 年利率
+  string periods = 10; // 期数
+  string repaymentDate = 11; // 当期还款日
+  string isOverdue = 12; // 是否逾期
+  string penaltyInterest = 13; // 逾期金额
+  string repaymentAmount = 14; // 当期还款金额
+  string bankSlip = 15; // 银行水单图片
+  string payBankTradeNo = 16; // 银行交易流水号
+  string payUnitName = 17; // 付款单位名称
+  string payBankAccountNo = 18; // 付款单位银行账号
+  string payBankName = 19; // 付款单位开户银行名称
+  string repaymentName = 20; // 收款单位名称
+  string repaymentBankAccount = 21; // 收款单位银行账号
+  string repaymentBankName = 22; // 收款单位开户银行名称
+  string approvalResult = 23; // 审批结果
+  string approvalTime = 24; // 审批时间
+
+}
+
+
+// 还款不通过上链请求
+message RepaymentDeniedRequest {
+  string outTradeNo = 1; // 商户订单号
+  string debtorName = 2; // 旅行商
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string creditorName = 4; // 金融机构
+  string creditorRegistrationNumber = 5; // 统一信用代码（金融机构）
+  string amount = 6; // 贷款金额
+  string principal = 7; // 本金余额
+  string repaymentType = 8; // 还款方式
+  string rate = 9; // 年利率
+  string periods = 10; // 期数
+  string repaymentDate = 11; // 当期还款日
+  string isOverdue = 12; // 是否逾期
+  string penaltyInterest = 13; // 逾期金额
+  string repaymentAmount = 14; // 当期还款金额
+  string bankSlip = 15; // 银行水单图片
+  string payBankTradeNo = 16; // 银行交易流水号
+  string payUnitName = 17; // 付款单位名称
+  string payBankAccountNo = 18; // 付款单位银行账号
+  string payBankName = 19; // 付款单位开户银行名称
+  string repaymentName = 20; // 收款单位名称
+  string repaymentBankAccount = 21; // 收款单位银行账号
+  string repaymentBankName = 22; // 收款单位开户银行名称
+  string approvalResult = 23; // 审批结果
+  string rejectionReason = 24; // 不通过原因
+  string approvalTime = 25; // 审批时间
+}
+
+
+
+// 还款审批不通过后再次申请上链请求
+message RepaymentReapplyRequest {
+  string outTradeNo = 1; // 商户订单号
+  string debtorName = 2; // 旅行商
+  string debtorRegistrationNumber = 3; // 统一信用代码（旅行商）
+  string creditorName = 4; // 金融机构
+  string creditorRegistrationNumber = 5; // 统一信用代码（金融机构）
+  string amount = 6; // 贷款金额
+  string principal = 7; // 本金余额
+  string repaymentType = 8; // 还款方式
+  string rate = 9; // 年利率
+  string periods = 10; // 期数
+  string repaymentDate = 11; // 当期还款日
+  string isOverdue = 12; // 是否逾期
+  string penaltyInterest = 13; // 逾期金额
+  string repaymentAmount = 14; // 当期还款金额
+  string bankSlip = 15; // 银行水单图片
+  string payBankTradeNo = 16; // 银行交易流水号
+  string payUnitName = 17; // 付款单位名称
+  string payBankAccountNo = 18; // 付款单位银行账号
+  string payBankName = 19; // 付款单位开户银行名称
+  string repaymentName = 20; // 收款单位名称
+  string repaymentBankAccount = 21; // 收款单位银行账号
+  string repaymentBankName = 22; // 收款单位开户银行名称
+  string applyTime = 23; // 申请时间
+
+}
+
+
+message FinancialResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  ExchangeTxData data = 3;
+}
+
+
+message InstrumentOrderRequest {
+  int64 trade_id = 1;// 订单ID
+  int64 exchange_id = 2;// 交易所id
+  int64 seller_id = 3;// 卖方ID
+  int64 buyer_id = 4;//买方ID
+  double trade_amount = 5;//交易金额
+  string trade_type = 6;//交易类型
+  string trade_status = 7;//交易状态
+  string trade_datetime = 8;//交易时间
+  string create_time = 9;//创建时间
+  string update_time = 10;//修改时间
+  int64 company_id = 11;// 企业ID
+  string company_name = 12;// 企业名称
+  int64 project_id = 13;// 公告id
+  string project_name = 14;// 公告名称
+  string exchange_name = 15;// 交易所名称
+  int64 instrument_id = 16;// 标的物id
+  string instrument_name = 17;// 标的物名称
+  string settlement_type = 18;//支付渠道
+  int64 settlement_id = 19; //交易明细
+}
+
+message InstrumentOrderResponse{
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  InstrumentOrderData data = 3;
+}
+
+message InstrumentOrderData{
+  // 票务标的
+  InstrumentOrderHash instrumentOrderHash = 1;
+}
+
+message InstrumentOrderHash{
+  int64 trade_id  = 1;
+  string tx_hash  = 2;
+}
+
+
+message QueryInstrumentOrderRecordRequest {
+  int64 trade_id = 1;// 订单ID
+}
+
+
+message QueryInstrumentOrderRecordResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  repeated  InstrumentOrderRecord data = 3;  //公告操作信息
+}
+
+message InstrumentOrderRecord {
+    int64 trade_id  = 1;
+    string tx_hash  = 2;
+    string trade_type = 3;
+    string create_time = 4;
+}
+
+
+
+// 转为价款
+message ConvertToInvoiceRequest {
+  string project_id = 1 ; // 公告ID
+  string project_name = 2 ; // 公告名称
+  string exchange_id = 3 ; // 交易所ID
+  string exchange_name = 4 ; // 交易所名称
+  string seller_id = 5 ; // 委托方ID
+  string seller_name = 6 ; // 委托方名称
+  string instrument_id = 7 ; // 标的物ID
+  string instrument_name = 8 ; // 标的物名称
+  string buyer_id = 9 ; // 竞买人ID
+  string buyer_name = 10 ; // 竞买人名称
+  string bidbond_amount = 11 ; // 保证金金额
+  string transaction_amount = 12; //成交总金额
+  string converted_amount = 13; //保证金转为价款金额
+  string status = 14; // 状态：已转为价款
+  string update_time = 15;  // 更新时间
+}
+
+
+// 余款退回
+message RefundBalanceRequest {
+  string project_id = 1 ; // 公告ID
+  string project_name = 2 ; // 公告名称
+  string exchange_id = 3 ; // 交易所ID
+  string exchange_name = 4 ; // 交易所名称
+  string seller_id = 5 ; // 委托方ID
+  string seller_name = 6 ; // 委托方名称
+  string instrument_id = 7 ; // 标的物ID
+  string instrument_name = 8 ; // 标的物名称
+  string buyer_id = 9 ; // 竞买人ID
+  string buyer_name = 10 ; // 竞买人名称
+  string bidbond_amount = 11 ; // 保证金金额
+  string transaction_amount = 12; //成交总金额
+  string converted_amount = 13; //保证金转为价款金额
+  string refund_amount = 14; //保证金退回金额
+  string status = 15; // 状态：已退回
+  string update_time = 16;  // 更新时间
+}
+
+
+// 全额原路退回
+message FullRefundRequest {
+  string project_id = 1 ; // 公告ID
+  string project_name = 2 ; // 公告名称
+  string exchange_id = 3 ; // 交易所ID
+  string exchange_name = 4 ; // 交易所名称
+  string seller_id = 5 ; // 委托方ID
+  string seller_name = 6 ; // 委托方名称
+  string instrument_id = 7 ; // 标的物ID
+  string instrument_name = 8 ; // 标的物名称
+  string buyer_id = 9 ; // 竞买人ID
+  string buyer_name = 10 ; // 竞买人名称
+  string bidbond_amount = 11 ; // 保证金金额
+  string refund_amount = 12; //保证金退回金额
+  string status = 13; // 状态：已退回
+  string update_time = 14;  // 更新时间
+}
+
+
+
+message TradeResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  ExchangeTxData data = 3;
+}
+
+
+
+
+message TradeChargeRequest {
+  
+//交易服务费订单号
+int64 trade_charge_id = 1;
+//关联成交订单号
+int64 trade_id = 2;
+//收费对象
+string charge_object = 3;
+//企业名称
+string company_name = 4;
+//服务费金额
+double charge_amount = 5;
+//状态
+string payment_status = 6;
+//创建时间
+string create_time = 7;
+//到期时间
+string expiry_datetime = 8;
+//收款单位名称
+string payee_account_name = 9;
+//收款单位银行账号
+string payee_account_number = 10;
+//收款单位开户银行名称
+string payee_bank_name = 11;
+//银行交易流水号
+string transaction_flow_id = 12;
+//付款单位名称
+string payer_account_name = 13;
+//付款单位银行账号
+string payer_account_number = 14;
+//付款单位开户银行名称
+string payer_bank_name = 15;
+//银行水单（图片）
+string file_url = 16;
+//提交验证时间
+string submit_time = 17;
+//审核结果
+string audit_result = 18;
+//不通过原因
+string remark = 19;
+//审核时间
+string audit_time = 20;
+}
+
+
+message TradeChargeRecordRequest {
+  int64 trade_id = 1;// 订单ID
+}
+
+
+
+message TradeChargeRecordResponse {
+  int64  code = 1;  // 响应码
+  string msg = 2;  // 响应描述
+  repeated  TradeChargeRecord data = 3;  //公告操作信息
+}
+
+message TradeChargeRecord {
+    int64 trade_id  = 1;
+    string tx_hash  = 2;
+    string trade_type = 3;
+    string create_time = 4;
+}
+
+message VoucherBlockchainRequest{
+  bytes voucher_file        = 1  ;    // 文件凭证
+}
+
+
+message VoucherBlockchainResponse{
+  int64  code = 1;  // 响应码
+  string msg  = 2;  // 响应描述
+  TxData data = 3;  // 区块链响应
+}
+
