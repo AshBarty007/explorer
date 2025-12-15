@@ -53,7 +53,7 @@ func BalanceOf(address string) (string, error) {
 
 	balance, err := client.BalanceAt(context.Background(), common.HexToAddress(address), nil)
 
-	return balance.String(), nil
+	return balance.String(), err
 }
 
 func TokenBalance(url string, contract common.Address, account string) string {

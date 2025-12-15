@@ -5,8 +5,10 @@ import (
 	bseth "blockchain_services/ethclient"
 	bsdb "blockchain_services/postgres"
 	"context"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"log"
+	"math/big"
 	"strconv"
 )
 
@@ -27,20 +29,32 @@ type TokenItem struct {
 	TotalTransaction int64  `json:"total_transaction"`
 }
 
-func GetAccountsList(url string) []AccountItem {
+func GetAccountsList(url string) ([]AccountItem, error) {
 	var accounts []AccountItem
-	addresses := bsdb.GetAddresses()
+	addresses, err := bsdb.GetAddresses()
+	if err != nil {
+		return nil, fmt.Errorf("获取地址列表失败: %w", err)
+	}
 
 	client, err := bseth.Dial(url)
 	if err != nil {
-		log.Fatal("Connect ETH Error: ", err)
-		return accounts
+		return nil, fmt.Errorf("连接ETH客户端失败: %w", err)
 	}
 	defer client.Close()
 
 	for _, addr := range addresses {
-		balance, _ := client.BalanceAt(context.Background(), common.HexToAddress(addr), nil)
-		transactions := bsdb.GetTransactionCountByAddress(addr)
+		balance, err := client.BalanceAt(context.Background(), common.HexToAddress(addr), nil)
+		if err != nil {
+			log.Printf("查询地址 %s 余额失败: %v", addr, err)
+			balance = big.NewInt(0) // 使用默认值继续处理
+		}
+		
+		transactions, err := bsdb.GetTransactionCountByAddress(addr)
+		if err != nil {
+			log.Printf("查询地址 %s 交易数失败: %v", addr, err)
+			transactions = 0 // 使用默认值继续处理
+		}
+		
 		accounts = append(accounts, AccountItem{
 			Address:          addr,
 			Balance:          balance.String(),
@@ -48,23 +62,31 @@ func GetAccountsList(url string) []AccountItem {
 		})
 	}
 
-	return accounts
+	return accounts, nil
 }
 
-func GetAccountDetail(url string, addr string) AccountItem {
+func GetAccountDetail(url string, addr string) (AccountItem, error) {
 	var account AccountItem
 
 	client, err := bseth.Dial(url)
 	if err != nil {
-		log.Fatal("Connect ETH Error: ", err)
-		return account
+		return account, fmt.Errorf("连接ETH客户端失败: %w", err)
 	}
 	defer client.Close()
 
-	balance, _ := client.BalanceAt(context.Background(), common.HexToAddress(addr), nil)
-	transactions := bsdb.GetTransactionCountByAddress(addr)
+	balance, err := client.BalanceAt(context.Background(), common.HexToAddress(addr), nil)
+	if err != nil {
+		return account, fmt.Errorf("查询余额失败: %w", err)
+	}
+	
+	transactions, err := bsdb.GetTransactionCountByAddress(addr)
+	if err != nil {
+		return account, fmt.Errorf("查询交易数失败: %w", err)
+	}
+	
 	erc20Balance := bseth.TokenBalance(url, config.Erc20ContractAddr, addr)
 	erc404Balance := bseth.TokenBalance(url, config.Erc404ContractAddr, addr)
+	
 	account = AccountItem{
 		Address:          addr,
 		Balance:          balance.String(),
@@ -73,7 +95,7 @@ func GetAccountDetail(url string, addr string) AccountItem {
 		TotalTransaction: transactions,
 	}
 
-	return account
+	return account, nil
 }
 
 func GetTokensList(url string) {}

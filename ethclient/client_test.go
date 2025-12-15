@@ -1,14 +1,11 @@
 package bs_eth
 
 import (
-	"blockchain_services/ethclient/contracts"
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/gmsm"
 	"github.com/ethereum/go-ethereum/params"
-	"log"
 	"math/big"
 	"testing"
 )
@@ -45,27 +42,6 @@ func TestSendTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("tx hash: ", tx.Hash().Hex())
-}
-
-func TestContracts(t *testing.T) {
-	client, err := Dial("http://192.168.10.126:8545")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
-
-	erc20Contract, err := contracts.NewContractsCaller(common.HexToAddress("0xcaF566B6936A73C2913cA4CA77Dd4E95CcD0eD03"), client)
-	if err != nil {
-		fmt.Println("NewToken error : ", err)
-	}
-
-	opts := &bind.CallOpts{}
-	balance, err := erc20Contract.BalanceOf(opts, common.HexToAddress("0xE25583099BA105D9ec0A67f5Ae86D90e50036425"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	log.Print("balanceOf : ", balance)
 }
 
 func TestTxHash(t *testing.T) {
