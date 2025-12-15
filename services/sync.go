@@ -1,7 +1,6 @@
 package services
 
 import (
-	"blockchain_services/config"
 	"blockchain_services/ethclient"
 	bs_db "blockchain_services/postgres"
 	"context"
@@ -12,13 +11,21 @@ import (
 	"github.com/ethereum/go-ethereum/gmsm"
 	"log"
 	"math/big"
+	"strconv"
 	"time"
 )
 
-func Sync() {
+func Sync(url string) {
 	var start, end uint64
 
-	etClient, err := bs_eth.Dial(config.CanaryUrl)
+	count := bs_db.GetBlockCount()
+	start, err := strconv.ParseUint(count, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	end = start
+
+	etClient, err := bs_eth.Dial(url)
 	if err != nil {
 		panic(err)
 	}

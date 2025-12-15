@@ -2,13 +2,9 @@ package bs_eth
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/gmsm"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm3"
 	"log"
@@ -17,11 +13,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var chainId = big.NewInt(18197)
-var url = "http://192.168.10.128:8545"
+var url = "http://127.0.0.1:8545" //"http://192.168.10.128:8545"
 var contractAddress = common.HexToAddress("0xc7b7a73cb27f069acd201768b3cdae513cdd76f0")
 
 // 5. 合约字节码（替换为你的 Solidity 编译输出的 .bin 内容）
@@ -193,241 +188,6 @@ func TestSelector(t *testing.T) {
 	kk := sm3.Sm3Sum([]byte("heelo"))
 
 	t.Log(hex.EncodeToString(ok), hex.EncodeToString(kk))
-}
-
-func TestDepoly21(t *testing.T) {
-	// 1. 连接到以太坊节点（可以是 Infura、Alchemy 或本地节点）
-	client, err := Dial(url)
-	if err != nil {
-		log.Fatalf("Failed to connect to Ethereum client: %v", err)
-	}
-	defer client.Close()
-
-	// 2. 加载私钥（⚠️ 仅用于测试！不要在生产中硬编码私钥）
-	privateKey, _ := crypto.HexToECDSA("39725efee3fb28614de3bacaffe4cc4bd8c436257e2c8bb887c4b5c4be45e76d")
-
-	// 3. 获取发送地址和 nonce
-	fromAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
-
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Fatalf("Failed to get nonce: %v", err)
-	}
-
-	// 4. 获取 gas 价格
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to suggest gas price: %v", err)
-	}
-
-	// 5. 合约字节码（替换为你的 Solidity 编译输出的 .bin 内容）
-	contractBytecode := "6080604052348015600e575f80fd5b50600a5f81905550610143806100235f395ff3fe608060405234801561000f575f80fd5b5060043610610034575f3560e01c80632e64cec1146100385780636057361d14610056575b5f80fd5b610040610072565b60405161004d919061009b565b60405180910390f35b610070600480360381019061006b91906100e2565b61007a565b005b5f8054905090565b805f8190555050565b5f819050919050565b61009581610083565b82525050565b5f6020820190506100ae5f83018461008c565b92915050565b5f80fd5b6100c181610083565b81146100cb575f80fd5b50565b5f813590506100dc816100b8565b92915050565b5f602082840312156100f7576100f66100b4565b5b5f610104848285016100ce565b9150509291505056fea2646970667358221220fd3c4d50cdb3a38288c1776446b8836540f9e5114f3952fc174e03651693972c64736f6c634300081a0033" // 你的合约bin
-
-	// 6. 构造交易
-	gasLimit := uint64(300000) // 根据合约复杂度调整
-
-	// 创建一个 to 为空的交易，data 为合约字节码
-	inner := EcdsaTx{
-		ChainID: big.NewInt(18197),
-		Nonce:   nonce,
-		//To:       &common.Address{2},
-		//Value:    big.NewInt(100000000000), //.Mul(big.NewInt(1000000000), big.NewInt(1000000000)),
-		Gas:      gasLimit,
-		GasPrice: gasPrice,
-		Data:     common.FromHex(contractBytecode),
-		//R, S      *big.Int,
-		//PublicKey: sm2.Compress(&privateKey.PublicKey),
-	}
-
-	// 7. 签名交易
-	h := etxHash(inner)
-	sig, err := crypto.Sign(h[:], privateKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	R, S := decodeSignature(sig)
-	//V := big.NewInt(int64(sig[64]))
-	//l := (len(sig) - 1) / 2
-	inner.R = R //big.NewInt(0).SetBytes(sig[:l])
-	inner.S = S //big.NewInt(0).SetBytes(sig[l : 2*l])
-	signedTx := EcdsaTransaction{
-		inner: inner,
-		time:  time.Now(),
-	}
-
-	// 8. 序列化为 RLP 编码
-	rawTxBytes, err := signedTx.MarshalBinary()
-	if err != nil {
-		log.Fatalf("Failed to marshal transaction: %v", err)
-	}
-	rawTxHex := hex.EncodeToString(rawTxBytes)
-
-	// 9. 打印原始交易（可用于调试）
-	fmt.Printf("Raw Transaction (hex): 0x%s\n", rawTxHex)
-
-	// 10. 调用 eth_sendRawTransaction
-	var result interface{}
-	err = client.Client().CallContext(context.Background(), &result, "eth_sendRawTransaction", "0x"+rawTxHex)
-	if err != nil {
-		log.Fatalf("Failed to send raw transaction: %v", err)
-	}
-
-	// 11. 打印交易哈希
-	fmt.Printf("Contract deployment transaction sent!\nTransaction Hash: %s\n", result)
-	fmt.Println("Wait for confirmation on the blockchain...")
-}
-
-func TestDepoly22(t *testing.T) {
-	// 1. 连接到以太坊节点（可以是 Infura、Alchemy 或本地节点）
-	client, err := Dial(url)
-	if err != nil {
-		log.Fatalf("Failed to connect to Ethereum client: %v", err)
-	}
-	defer client.Close()
-
-	// 2. 加载私钥（⚠️ 仅用于测试！不要在生产中硬编码私钥）
-	privateKeyHex := "39725efee3fb28614de3bacaffe4cc4bd8c436257e2c8bb887c4b5c4be45e76d" // 替换为你的私钥（64位十六进制字符串）
-	privateKeyBytes, err := hex.DecodeString(privateKeyHex)
-	if err != nil {
-		log.Fatalf("Invalid private key: %v", err)
-	}
-	privateKey, err := gmsm.ToSM2(privateKeyBytes)
-	if err != nil {
-		log.Fatalf("Failed to load private key: %v", err)
-	}
-
-	// 3. 获取发送地址和 nonce
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("Error casting public key to ECDSA")
-	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	fmt.Println(fromAddress)
-
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Fatalf("Failed to get nonce: %v", err)
-	}
-
-	// 4. 获取 gas 价格
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to suggest gas price: %v", err)
-	}
-
-	// 5. 合约字节码（替换为你的 Solidity 编译输出的 .bin 内容）
-	contractBytecode := "608060405260645f553480156012575f80fd5b50610143806100205f395ff3fe608060405234801561000f575f80fd5b5060043610610034575f3560e01c80632e64cec1146100385780636057361d14610056575b5f80fd5b610040610072565b60405161004d919061009b565b60405180910390f35b610070600480360381019061006b91906100e2565b61007a565b005b5f8054905090565b805f8190555050565b5f819050919050565b61009581610083565b82525050565b5f6020820190506100ae5f83018461008c565b92915050565b5f80fd5b6100c181610083565b81146100cb575f80fd5b50565b5f813590506100dc816100b8565b92915050565b5f602082840312156100f7576100f66100b4565b5b5f610104848285016100ce565b9150509291505056fea26469706673582212209a691bdaeef9fa1fde7a8a356fec9a9801979d2fa47bc9403cb09ca96aa9808864736f6c634300081a0033" // 你的合约bin
-
-	// 6. 构造交易
-	gasLimit := uint64(5000) // 根据合约复杂度调整
-
-	// 创建一个 to 为空的交易，data 为合约字节码
-	tx := types.NewContractCreation(nonce, nil, gasLimit, gasPrice.Add(gasPrice, gasPrice), common.FromHex(contractBytecode))
-
-	// 7. 签名交易
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(18197)), privateKey) // 主网 chainID=1
-	if err != nil {
-		log.Fatalf("Failed to sign transaction: %v", err)
-	}
-
-	// 8. 序列化为 RLP 编码
-	rawTxBytes, err := signedTx.MarshalBinary()
-	if err != nil {
-		log.Fatalf("Failed to marshal transaction: %v", err)
-	}
-	rawTxHex := hex.EncodeToString(rawTxBytes)
-
-	// 9. 打印原始交易（可用于调试）
-	fmt.Printf("Raw Transaction (hex): 0x%s\n", rawTxHex)
-
-	// 10. 调用 eth_sendRawTransaction
-	err = client.Client().CallContext(context.Background(), nil, "eth_sendRawTransaction", "0x"+rawTxHex)
-	if err != nil {
-		log.Fatalf("Failed to send raw transaction: %v", err)
-	}
-
-	// 11. 打印交易哈希
-	fmt.Printf("Contract deployment transaction sent!\nTransaction Hash: %s\n", signedTx.Hash())
-	fmt.Println("Wait for confirmation on the blockchain...")
-	//0x6db20c530b3f96cd5ef64da2b1b931cb8f264009
-
-	var res interface{}
-	err = client.Client().CallContext(context.Background(), &res, "eth_getTransactionReceipt", signedTx.Hash().Hex())
-	if err != nil {
-		log.Fatalf("Failed to send raw transaction: %v", err)
-	}
-	fmt.Println("Raw Transaction (hex): ", res)
-}
-
-func TestCall21(t *testing.T) {
-	// 1. 连接到以太坊节点
-	client, err := ethclient.Dial(url)
-	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-	}
-	defer client.Close()
-
-	// 2. 加载私钥（仅用于测试！）
-	privateKey, err := gmsm.HexToSM2("39725efee3fb28614de3bacaffe4cc4bd8c436257e2c8bb887c4b5c4be45e76d")
-	if err != nil {
-		log.Fatalf("Invalid private key: %v", err)
-	}
-
-	// 3. 获取发送地址
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("Error casting public key to ECDSA")
-	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	// 4. 创建交易发送器
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Fatalf("Failed to get nonce: %v", err)
-	}
-
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to suggest gas price: %v", err)
-	}
-
-	auth := bind.NewKeyedTransactor(privateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)
-	auth.GasLimit = 300000
-	auth.GasPrice = gasPrice
-
-	// 5. 合约地址
-	//contract_addr := common.HexToAddress(contractAddress)
-	fmt.Println(len(contractAddress), contractAddress)
-
-	// 6. 调用状态更改函数（get）
-	instance, err := NewSimpleStorageCaller(contractAddress, client)
-	if err != nil {
-		log.Fatalf("Failed to create contract instance: %v", err)
-	}
-
-	storedData, err := instance.Retrieve(nil)
-	if err != nil {
-		log.Fatalf("Failed to call get(): %v", err)
-	}
-	fmt.Printf("Current storedData: %d\n", storedData)
-
-	//// 8. 调用状态更改函数（set）
-	//instance2, err := NewSimpleStorageTransactor(contractAddress, client)
-	//if err != nil {
-	//	log.Fatalf("Failed to create contract instance: %v", err)
-	//}
-	//
-	//tx, err := instance2.Store(nil, big.NewInt(25))
-	//if err != nil {
-	//	log.Fatalf("Failed to send transaction: %v", err)
-	//}
-	//
-	//fmt.Printf("Transaction sent: %s\n", tx.Hash().Hex())
 }
 
 func TestTransafer(t *testing.T) {

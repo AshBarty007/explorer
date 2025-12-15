@@ -13,6 +13,7 @@ import (
 	"log"
 	"math/big"
 	"testing"
+	"time"
 )
 
 func TestTicker(T *testing.T) {
@@ -451,3 +452,10 @@ type Log struct {
 	Removed          bool      `json:"removed"`
 }
 */
+
+func TestTime(t *testing.T) {
+	now := time.Now().Truncate(24 * time.Hour)
+	sevenDaysAgo := now.AddDate(0, 0, -6) // 包含今天共7天：-6 到 0
+	fmt.Println(time.Now().Unix())
+	fmt.Println(sevenDaysAgo.Unix())
+}

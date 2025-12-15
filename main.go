@@ -1,6 +1,7 @@
 package main
 
 import (
+	"blockchain_services/config"
 	bshttp "blockchain_services/http"
 	bsdb "blockchain_services/postgres"
 	"blockchain_services/services"
@@ -12,7 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	go services.Sync()
+	go services.Sync(config.TestUrl)
 
 	bshttp.StartHttp()
 }

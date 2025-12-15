@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
 	"strconv"
 	"time"
 )
@@ -115,30 +116,35 @@ func GetBlocks(start, end int) []Block {
 }
 
 // GetAddressCount 5.地址数量
-func GetAddressCount() (int64, error) {
+func GetAddressCount() int64 {
 	var count int64
 	err := Db.Raw("SELECT COUNT(DISTINCT from_address) FROM transactions").Scan(&count).Error
-	return count, err
+	if err != nil {
+		log.Println("GetAddressCount 查询出错", err)
+	}
+	return count
 }
 
 // GetTransactionCount 6.交易总数
-func GetTransactionCount() (string, error) {
+func GetTransactionCount() uint {
 	var transaction Transaction
 	result := Db.Last(&transaction)
 	if result.Error != nil {
-		return "", result.Error
+		log.Println("GetTransactionCount 查询出错", result.Error)
+		return 0
 	}
-	return strconv.Itoa(int(transaction.ID)), nil
+	return transaction.ID
 }
 
 // GetBlockCount 7.区块总数
-func GetBlockCount() (string, error) {
+func GetBlockCount() string {
 	var block Block
 	result := Db.Last(&block)
 	if result.Error != nil {
-		return "", result.Error
+		log.Println("GetBlockCount 查询出错", result.Error)
+		return "0"
 	}
-	return strconv.Itoa(int(block.ID)), nil
+	return strconv.Itoa(int(block.ID))
 }
 
 // GetReceiptByHash 8.查询收据
@@ -160,17 +166,36 @@ func GetReceipts(start, end int) []Receipt {
 }
 
 // GetReceiptsByLast 10.查询最近7天收据
-func GetReceiptsByLast() []Receipt {
-	var receipts []Receipt
-	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
-	Db.Where("created_at >= ?", sevenDaysAgo).Find(&receipts)
-	return receipts
+func GetReceiptsByLast() map[string]int {
+	now := time.Now().Truncate(24 * time.Hour)
+	sevenDaysAgo := now.AddDate(0, 0, -6) // 包含今天共7天：-6 到 0
+
+	counts := make(map[string]int)
+	for i := 0; i < 7; i++ {
+		date := sevenDaysAgo.AddDate(0, 0, i)
+		dateStr := date.Format("01-02")
+		counts[dateStr] = 0
+	}
+
+	var block []Block
+	Db.Where("timestamp >= ?", sevenDaysAgo.Unix()).Find(&block)
+	for _, r := range block {
+		dateStr := time.Unix(int64(r.Timestamp), 0).Format("01-02")
+		if _, exists := counts[dateStr]; exists && len(r.Transactions) > 0 {
+			counts[dateStr] += len(r.Transactions)
+		}
+	}
+
+	return counts
 }
 
 // GetTransactionsByAddress 11.根据地址查询交易
-func GetTransactionsByAddress(address string) []Receipt {
+func GetTransactionsByAddress(address string, start int, end int) []Receipt {
 	var receipts []Receipt
-	Db.Where("from_address = ?", address).Find(&receipts)
+	Db.Where("from_address = ?", address).
+		Offset(start).
+		Limit(end).
+		Find(&receipts)
 	return receipts
 }
 
@@ -179,4 +204,20 @@ func GetReceiptsByAddress(address string) []Receipt {
 	var receipts []Receipt
 	Db.Where("from_address = ?", address).Find(&receipts)
 	return receipts
+}
+
+// GetTransactionCountByAddress 13. 根据地址查询地址交易总数
+func GetTransactionCountByAddress(address string) int64 {
+	var count int64
+	Db.Model(&Receipt{}).Where("from_address = ?", address).Count(&count)
+	return count
+}
+
+// GetAddresses
+func GetAddresses() []string {
+	var addresses []string
+	if err := Db.Model(&Transaction{}).Distinct("from_address").Pluck("from_address", &addresses); err != nil {
+		log.Println("查询唯一FromAddress失败:", err)
+	}
+	return addresses
 }

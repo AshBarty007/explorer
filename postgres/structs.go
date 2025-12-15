@@ -93,3 +93,31 @@ type Log struct {
 	LogIndex         uint        `json:"log_index"`
 	Removed          bool        `json:"removed"`
 }
+
+type AccountItem struct {
+	gorm.Model
+	Address          string       `json:"address" gorm:"uniqueIndex"` // Unique for accounts
+	Balance          string       `json:"balance"`                    // ETH balance as string (for big ints)
+	TotalTransaction int64        `json:"total_transaction"`
+	ERC20Tokens      []ERC20Token `gorm:"foreignKey:AccountID"` // One-to-many: multiple ERC-20s
+	NFTs             []NFT        `gorm:"foreignKey:AccountID"` // One-to-many: multiple NFTs (or ERC-404 if custom)
+}
+
+type ERC20Token struct {
+	gorm.Model
+	AccountID    uint   `json:"account_id" gorm:"index"` // Foreign key to AccountItem
+	TokenAddress string `json:"token_address"`           // e.g., contract address like "0x..."
+	Symbol       string `json:"symbol"`                  // Optional: e.g., "USDT"
+	Balance      string `json:"balance"`                 // Token balance as string (for decimals/big ints)
+	// Add more fields if needed, e.g., Decimals int, LastUpdated time.Time
+}
+
+type NFT struct {
+	gorm.Model
+	AccountID       uint   `json:"account_id" gorm:"index"` // Foreign key to AccountItem
+	ContractAddress string `json:"contract_address"`        // e.g., "0x..." for the NFT collection
+	TokenID         string `json:"token_id"`                // NFT's unique ID (as string for big ints)
+	Standard        string `json:"standard"`                // e.g., "ERC721", "ERC1155", or "ERC404"
+	Metadata        string `json:"metadata"`                // Optional: JSON string for traits/URI
+	// Add more fields if needed, e.g., Quantity int (for ERC-1155), AcquiredAt time.Time
+}

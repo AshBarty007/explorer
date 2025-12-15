@@ -1,9 +1,12 @@
 package bshttp
 
 import (
+	"blockchain_services/config"
+	bs_eth "blockchain_services/ethclient"
 	bsdb "blockchain_services/postgres"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,8 +27,9 @@ func StartHttp() {
 
 	http.HandleFunc("/GetReceiptsByAddress", GetReceiptsByAddressHandler)
 	http.HandleFunc("/GetTransactionsByAddress", GetTransactionsByAddressHandler)
-	http.HandleFunc("/BalanceOfErc20", BalanceOfErc20Handler)
-	http.HandleFunc("/BalanceOfErc404", BalanceOfErc404Handler)
+	http.HandleFunc("/BalanceOfToken", GetBalanceOfTokenHandler)
+	http.HandleFunc("/GetAddresses", GetAddressesHandler)
+	http.HandleFunc("/GetAddressDetail", GetAddressDetailHandler)
 
 	// 启动 HTTP 服务，默认监听 9966 端口
 	fmt.Println("Starting server at http://localhost:9966")
@@ -36,6 +40,11 @@ func StartHttp() {
 
 func GetBlockByNumberHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	number := r.URL.Query().Get("number")
 	block := bsdb.GetBlockByNumber(number)
 	err := json.NewEncoder(w).Encode(block)
@@ -47,6 +56,11 @@ func GetBlockByNumberHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetTransactionByHashHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	hash := r.URL.Query().Get("hash")
 	transaction := bsdb.GetTransactionByHash(hash)
 	err := json.NewEncoder(w).Encode(transaction)
@@ -58,6 +72,11 @@ func GetTransactionByHashHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	start := r.URL.Query().Get("start")
 	end := r.URL.Query().Get("end")
 	s, err := strconv.Atoi(start)
@@ -83,6 +102,11 @@ func GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetBlocksHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	start := r.URL.Query().Get("start")
 	end := r.URL.Query().Get("end")
 	s, err := strconv.Atoi(start)
@@ -105,30 +129,15 @@ func GetBlocksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func GetAddressCountHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	count, err := bsdb.GetAddressCount()
-	if err != nil {
-		log.Println("GetAddressCount查询失败", err)
-		http.Error(w, "Record not found", http.StatusNotFound)
-		return
-	}
-	err = json.NewEncoder(w).Encode(count)
-	if err != nil {
-		log.Println("GetAddressCount编码失败", err)
-		http.Error(w, "Record not found", http.StatusNotFound)
-		return
-	}
-}
 func GetTransactionCountHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	count, err := bsdb.GetTransactionCount()
-	if err != nil {
-		log.Println("GetTransactionCount查询失败", err)
-		http.Error(w, "Record not found", http.StatusNotFound)
-		return
-	}
-	err = json.NewEncoder(w).Encode(count)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	count := bsdb.GetTransactionCount()
+	err := json.NewEncoder(w).Encode(count)
 	if err != nil {
 		log.Println("GetTransactionCount编码失败", err)
 		http.Error(w, "Record not found", http.StatusNotFound)
@@ -137,13 +146,13 @@ func GetTransactionCountHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetBlockCountHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	count, err := bsdb.GetBlockCount()
-	if err != nil {
-		log.Println("GetBlockCount查询失败", err)
-		http.Error(w, "Record not found", http.StatusNotFound)
-		return
-	}
-	err = json.NewEncoder(w).Encode(count)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	count := bsdb.GetBlockCount()
+	err := json.NewEncoder(w).Encode(count)
 	if err != nil {
 		log.Println("GetBlockCount编码失败", err)
 		http.Error(w, "Record not found", http.StatusNotFound)
@@ -152,6 +161,11 @@ func GetBlockCountHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetReceiptByHashHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	hash := r.URL.Query().Get("hash")
 	receipt := bsdb.GetReceiptByHash(hash)
 	err := json.NewEncoder(w).Encode(receipt)
@@ -163,6 +177,11 @@ func GetReceiptByHashHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetReceiptsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	start := r.URL.Query().Get("start")
 	end := r.URL.Query().Get("end")
 	s, err := strconv.Atoi(start)
@@ -188,6 +207,11 @@ func GetReceiptsHandler(w http.ResponseWriter, r *http.Request) {
 }
 func GetReceiptsByLastHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	receipts := bsdb.GetReceiptsByLast()
 	err := json.NewEncoder(w).Encode(receipts)
 	if err != nil {
@@ -196,19 +220,13 @@ func GetReceiptsByLastHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func GetTransactionsByAddressHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	address := r.URL.Query().Get("address")
-	transactions := bsdb.GetTransactionsByAddress(address)
-	err := json.NewEncoder(w).Encode(transactions)
-	if err != nil {
-		log.Println("GetReceiptsByLast编码失败", err)
-		http.Error(w, "Record not found", http.StatusNotFound)
-		return
-	}
-}
 func GetReceiptsByAddressHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 	address := r.URL.Query().Get("address")
 	receipts := bsdb.GetReceiptsByAddress(address)
 	err := json.NewEncoder(w).Encode(receipts)
@@ -218,25 +236,120 @@ func GetReceiptsByAddressHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-func BalanceOfErc20Handler(w http.ResponseWriter, r *http.Request) {
+func GetBalanceOfTokenHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	//address := r.URL.Query().Get("address")
-	balance := 0
-	err := json.NewEncoder(w).Encode(balance)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	account := r.URL.Query().Get("address")
+	token := r.URL.Query().Get("address")
+
+	client, err := bs_eth.Dial(config.TestUrl)
+	if err != nil {
+		http.Error(w, "Record not found", http.StatusNotFound)
+		log.Println("Connect ETH Error: ", err)
+		return
+	}
+	defer client.Close()
+
+	balance := bs_eth.TokenBalance(config.TestUrl, common.HexToAddress(account), token)
+
+	err = json.NewEncoder(w).Encode(balance)
 	if err != nil {
 		log.Println("GetReceiptsByLast编码失败", err)
 		http.Error(w, "Record not found", http.StatusNotFound)
 		return
 	}
 }
-func BalanceOfErc404Handler(w http.ResponseWriter, r *http.Request) {
+
+func GetAddressCountHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	//address := r.URL.Query().Get("address")
-	balance := 0
-	err := json.NewEncoder(w).Encode(balance)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	count := bsdb.GetAddressCount()
+	err := json.NewEncoder(w).Encode(count)
+	if err != nil {
+		log.Println("GetAddressCount编码失败", err)
+		http.Error(w, "Record not found", http.StatusNotFound)
+		return
+	}
+}
+func GetTransactionsByAddressHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	address := r.URL.Query().Get("address")
+	startStr := r.URL.Query().Get("start")
+	endStr := r.URL.Query().Get("end")
+
+	isVal := common.IsHexAddress(address)
+	if !isVal {
+		http.Error(w, "invalid 'address' format: must be a valid 0x-prefixed hex address (42 chars)", http.StatusBadRequest)
+		return
+	}
+
+	start, err := parseNonNegativeInt(startStr, 0)
+	if err != nil {
+		http.Error(w, "invalid 'start': must be a non-negative integer", http.StatusBadRequest)
+		return
+	}
+
+	end, err := parseNonNegativeInt(endStr, 10)
+	if err != nil {
+		http.Error(w, "invalid 'end': must be a non-negative integer", http.StatusBadRequest)
+		return
+	}
+
+	transactions := bsdb.GetTransactionsByAddress(address, start, end)
+	err = json.NewEncoder(w).Encode(transactions)
 	if err != nil {
 		log.Println("GetReceiptsByLast编码失败", err)
 		http.Error(w, "Record not found", http.StatusNotFound)
 		return
 	}
 }
+func GetAddressesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	list := GetAccountsList(config.TestUrl)
+	err := json.NewEncoder(w).Encode(list)
+	if err != nil {
+		log.Println("GetTransactionCountByAddress 编码失败", err)
+		http.Error(w, "Record not found", http.StatusNotFound)
+		return
+	}
+}
+func GetAddressDetailHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	address := r.URL.Query().Get("address")
+	detail := GetAccountDetail(config.TestUrl, address)
+
+	err := json.NewEncoder(w).Encode(detail)
+	if err != nil {
+		log.Println("GetTransactionCountByAddress 编码失败", err)
+		http.Error(w, "Record not found", http.StatusNotFound)
+		return
+	}
+}
+
+//func GetTokenCount
+//func GetTokenInfoHandler(w http.ResponseWriter, r *http.Request){}
+//func GetTokenList
+//func GetTransactionsByAddress

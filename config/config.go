@@ -28,12 +28,13 @@ var (
 
 	GrpcPort = "9965"
 
-	TestUrl           = "http://192.168.120.32:8545"
-	CanaryUrl         = "http://192.168.10.127:8545"
-	RpcUrl            = "http://192.168.120.33:8545"
-	ChainID           = big.NewInt(1)
-	ProofContractAddr = common.HexToAddress("0x23C5f582BAEdE953e6e2F5b8Dd680d5B97B39E78")
-	Erc20ContractAddr = common.HexToAddress("0xcaF566B6936A73C2913cA4CA77Dd4E95CcD0eD03")
+	TestUrl            = "http://192.168.120.33:8545"
+	CanaryUrl          = "http://192.168.10.127:8545"
+	RpcUrl             = "http://192.168.120.33:8545"
+	ChainID            = big.NewInt(1)
+	ProofContractAddr  = common.HexToAddress("0x23C5f582BAEdE953e6e2F5b8Dd680d5B97B39E78")
+	Erc20ContractAddr  = common.HexToAddress("0x0e4bb0551b5a288addfc45e971ff5ac8d66889f5")
+	Erc404ContractAddr = common.HexToAddress("0x8fde581e3e32bc98b6c0a30e663dba63643e987f")
 
 	RedisAddr     = "192.168.90.179:6379"
 	RedisPassword = "dev@123456"
@@ -48,7 +49,6 @@ var (
 
 // InitConfig 设置是否读取环境变量，不使用内置值
 func InitConfig(b bool) {
-
 	DbHost = "192.168.10.126"
 	DbUsername = "eth"
 	DbPassword = "123456"

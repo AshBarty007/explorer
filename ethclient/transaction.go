@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/gmsm"
 	"github.com/ethereum/go-ethereum/gmsm/sm2"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/tjfoc/gmsm/sm3"
-	"math/big"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 const (
