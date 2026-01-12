@@ -3,12 +3,10 @@ module blockchain_services
 go 1.24
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/emmansun/gmsm v0.33.0
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
-	github.com/ethereum/go-ethereum v1.16.1
+	github.com/ethereum/go-ethereum v1.16.7
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/jackc/pgx/v5 v5.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tjfoc/gmsm v1.4.1
 	google.golang.org/grpc v1.73.0
@@ -27,15 +25,13 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.6.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -49,4 +45,4 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
-replace github.com/ethereum/go-ethereum => github.com/AshBarty007/gm_ethereum v0.0.0-20251010062039-a69779e83d47
+replace github.com/ethereum/go-ethereum => github.com/AshBarty007/gm_ethereum v0.0.0-20260112075114-a17de93fc55f

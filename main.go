@@ -2,18 +2,25 @@ package main
 
 import (
 	"blockchain_services/config"
-	bshttp "blockchain_services/http"
-	bsdb "blockchain_services/postgres"
-	"blockchain_services/services"
+	"blockchain_services/download"
+	server "blockchain_services/http"
+	db "blockchain_services/postgres"
+	"blockchain_services/redis"
 )
 
 func main() {
-	err := bsdb.InitPgConn()
-	if err != nil {
-		panic(err)
-	}
+	// 初始化配置（从 .env 文件读取）
+	config.Init()
 
-	go services.Sync(config.TestUrl)
+	// 初始化Redis客户端
+	redis.NewRedisClient()
 
-	bshttp.StartHttp()
+	// 初始化数据库连接
+	db.InitPgConn()
+
+	// 启动区块同步服务
+	go download.Sync()
+
+	// 启动HTTP服务
+	server.StartHttp()
 }

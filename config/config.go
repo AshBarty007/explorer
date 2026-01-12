@@ -1,57 +1,77 @@
 package config
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+	"os"
+	"strconv"
+
+	"github.com/joho/godotenv"
 )
-
-type ethParams struct {
-	TestUrl   string
-	CanaryUrl string
-	ChainID   *big.Int
-	AdminKey  string
-	AdminAddr string
-	//ContractAddr common.Address
-}
-
-var EthParams = &ethParams{
-	TestUrl:   "http://192.168.120.32:8545",
-	CanaryUrl: "http://192.168.10.127:8545",
-	ChainID:   big.NewInt(1),
-	AdminKey:  "39725efee3fb28614de3bacaffe4cc4bd8c436257e2c8bb887c4b5c4be45e76d",
-	AdminAddr: "0xE25583099BA105D9ec0A67f5Ae86D90e50036425",
-	//ContractAddr: common.HexToAddress("0x4B6Ea59a4CE0406E98FA6E29440af027dA33B970")
-}
 
 var (
-	IpfsUrl = "http://192.168.90.141:30001/api/v0/add?stream-channels=true&pin=false&wrap-with-directory=false&progress=false"
+	GrpcPort string
+	HttpPort string
 
-	GrpcPort = "9965"
+	TestUrl  string
+	Node1Url string
+	Node2Url string
+	Node3Url string
+	ChainID  *big.Int
 
-	TestUrl            = "http://192.168.120.33:8545"
-	CanaryUrl          = "http://192.168.10.127:8545"
-	RpcUrl             = "http://192.168.120.33:8545"
-	ChainID            = big.NewInt(1)
-	ProofContractAddr  = common.HexToAddress("0x23C5f582BAEdE953e6e2F5b8Dd680d5B97B39E78")
-	Erc20ContractAddr  = common.HexToAddress("0x0e4bb0551b5a288addfc45e971ff5ac8d66889f5")
-	Erc404ContractAddr = common.HexToAddress("0x8fde581e3e32bc98b6c0a30e663dba63643e987f")
+	RedisAddr     string
+	RedisPassword string
+	RedisDB       int
 
-	RedisAddr     = "192.168.90.179:6379"
-	RedisPassword = "dev@123456"
-	RedisDB       = 0
-
-	DbHost     = "127.0.0.1" //"192.168.10.126"
-	DbUsername = "eth"
-	DbPassword = "123456"
-	DbName     = "eth_explorer"
-	DbPort     = "5432"
+	DbHost     string
+	DbUsername string
+	DbPassword string
+	DbName     string
+	DbPort     string
 )
 
-// InitConfig 设置是否读取环境变量，不使用内置值
-func InitConfig(b bool) {
-	DbHost = "192.168.10.126"
-	DbUsername = "eth"
-	DbPassword = "123456"
-	DbName = "eth_explorer"
-	DbPort = "5432"
+// Init 初始化配置，从 .env 文件读取
+func Init() {
+	// 加载 .env 文件（如果存在）
+	if err := godotenv.Load(); err != nil {
+		panic("未找到 .env 文件: " + err.Error())
+	}
+
+	// 读取配置，所有配置项必须从 .env 文件读取
+	GrpcPort = getEnv("GRPC_PORT")
+	HttpPort = getEnv("HTTP_PORT")
+
+	TestUrl = getEnv("TEST_URL")
+	Node1Url = getEnv("NODE1_URL")
+	Node2Url = getEnv("NODE2_URL")
+	Node3Url = getEnv("NODE3_URL")
+	chainIDStr := getEnv("CHAIN_ID")
+	chainIDInt, err := strconv.ParseInt(chainIDStr, 10, 64)
+	if err != nil {
+		panic("CHAIN_ID 解析失败: " + err.Error())
+	}
+	ChainID = big.NewInt(chainIDInt)
+
+	RedisAddr = getEnv("REDIS_ADDR")
+	RedisPassword = getEnv("REDIS_PASSWORD")
+	redisDBStr := getEnv("REDIS_DB")
+	redisDBInt, err := strconv.Atoi(redisDBStr)
+	if err != nil {
+		panic("REDIS_DB 解析失败: " + err.Error())
+	}
+	RedisDB = redisDBInt
+
+	DbHost = getEnv("DB_HOST")
+	DbUsername = getEnv("DB_USERNAME")
+	DbPassword = getEnv("DB_PASSWORD")
+	DbName = getEnv("DB_NAME")
+	DbPort = getEnv("DB_PORT")
+}
+
+// getEnv 获取环境变量，如果不存在则 panic
+func getEnv(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		panic("环境变量 " + key + " 未设置，请在 .env 文件中配置")
+	}
+	return value
 }

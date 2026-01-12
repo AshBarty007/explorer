@@ -2,9 +2,7 @@ package impl
 
 import (
 	common "blockchain_services/config"
-	"blockchain_services/ethclient"
 	"blockchain_services/grpc/pb"
-	"blockchain_services/ipfs"
 	postgres "blockchain_services/postgres"
 	"blockchain_services/redis"
 	"context"
@@ -282,6 +280,8 @@ func (t *TicketsServer) MainOrderTicket(ctx context.Context, req *pb.RequestMess
 }
 
 func (t *TicketsServer) UploadToBlockChain(content string) (txHash string, err error) {
+	const AdminAddr  string = "0xE25583099BA105D9ec0A67f5Ae86D90e50036425"
+
 	type AddressTest struct {
 		gorm.Model
 		Address string
@@ -291,7 +291,7 @@ func (t *TicketsServer) UploadToBlockChain(content string) (txHash string, err e
 	ctx := context.Background()
 
 	rc := redis.NewRedisClient()
-	exists, err := rc.Exists(ctx, common.EthParams.AdminAddr).Result()
+	exists, err := rc.Exists(ctx, AdminAddr).Result()
 	if err != nil {
 		return "", err
 	}
@@ -299,23 +299,20 @@ func (t *TicketsServer) UploadToBlockChain(content string) (txHash string, err e
 
 	var key string
 	if exists == 1 {
-		key, err = rc.Get(ctx, common.EthParams.AdminAddr).Result()
+		key, err = rc.Get(ctx, AdminAddr).Result()
 		if err != nil {
 			return "", err
 		}
 	} else {
-		err := postgres.InitPgConn()
-		if err != nil {
-			return "", err
-		}
-
+		postgres.InitPgConn()
+	
 		var p AddressTest
-		err = postgres.Db.First(&p, "address = ?", common.EthParams.AdminAddr).Error
+		err = postgres.Db.First(&p, "address = ?", AdminAddr).Error
 		if err != nil {
 			return "", err
 		}
 
-		err = rc.Set(ctx, common.EthParams.AdminAddr, p.Key, 120*time.Second).Err()
+		err = rc.Set(ctx, AdminAddr, p.Key, 120*time.Second).Err()
 		if err != nil {
 			return "", err
 		}
@@ -324,17 +321,17 @@ func (t *TicketsServer) UploadToBlockChain(content string) (txHash string, err e
 	}
 	log.Println("设置(或读取)redis的值: ", key)
 
-	ipfsHash, err := ipfs.UploadToIPFS(content)
-	if err != nil {
-		return "", err
-	}
-	log.Println("已返回ipfs哈希: ", ipfsHash)
+	// ipfsHash, err := ipfs.UploadToIPFS(content)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// log.Println("已返回ipfs哈希: ", ipfsHash)
 
-	txHash, err = bs_eth.Call(key, "EVIDENCE", ipfsHash)
-	if err != nil {
-		return "", err
-	}
-	log.Println("已返回交易哈希: ", txHash)
+	// txHash, err = bs_eth.Call(key, "EVIDENCE", ipfsHash)
+	// if err != nil {
+	// 	return "", err
+	// }
+	log.Println("已返回交易哈希: ", content)
 
 	return txHash, nil
 }
