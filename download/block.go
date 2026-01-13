@@ -375,7 +375,7 @@ func processTransaction(etClient *blockchain.Client, tx *blockchain.Transaction,
 		default:
 			// 创建合约记录
 			contract := &db.Contract{
-				Address:            tx.To().String(),
+				Address:            contractAddr,
 				Creator:            tx.From().String(),
 				CreatedTime:        blockTime,
 				CreatedHash:        tx.Hash().String(),
