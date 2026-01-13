@@ -12,7 +12,7 @@ var (
 	GrpcPort string
 	HttpPort string
 
-	TestUrl  string
+	LocalUrl string
 	Node1Url string
 	Node2Url string
 	Node3Url string
@@ -40,7 +40,7 @@ func Init() {
 	GrpcPort = getEnv("GRPC_PORT")
 	HttpPort = getEnv("HTTP_PORT")
 
-	TestUrl = getEnv("TEST_URL")
+	LocalUrl = getEnv("LOCAL_URL")
 	Node1Url = getEnv("NODE1_URL")
 	Node2Url = getEnv("NODE2_URL")
 	Node3Url = getEnv("NODE3_URL")

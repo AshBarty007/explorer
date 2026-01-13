@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-var rpcUrl = config.TestUrl
+var rpcUrl = config.LocalUrl
 
 func Call(address string, data []byte) ([]byte, error) {
 	etClient, err := Dial(rpcUrl)

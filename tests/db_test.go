@@ -1,335 +1,232 @@
 package tests
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"strconv"
+	"blockchain_services/config"
+	bsdb "blockchain_services/postgres"
+	redisCache "blockchain_services/redis"
+	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type StringSlice []string
+// TestDatabaseConnection 测试数据库连接
+func TestDatabaseConnection(t *testing.T) {
+	// 初始化配置
+	config.Init()
 
-func (s StringSlice) Value() (driver.Value, error) {
-	if s == nil {
-		return nil, nil
-	}
-	return json.Marshal(s)
-}
+	// 初始化数据库连接
+	bsdb.InitPgConn()
 
-func (s *StringSlice) Scan(value interface{}) error {
-	if value == nil {
-		*s = nil
-		return nil
-	}
-	if bytes, ok := value.([]byte); ok {
-		return json.Unmarshal(bytes, s)
-	}
-	return fmt.Errorf("cannot scan %T into StringSlice", value)
 }
 
-type Block struct {
-	gorm.Model
-	ParentHash       string
-	Miner            string
-	StateRoot        string
-	TransactionsRoot string
-	ReceiptsRoot     string
-	LogsBloom        string
-	Difficulty       string
-	Number           string
-	GasLimit         uint64
-	GasUsed          uint64
-	Timestamp        uint64
-	ExtraData        string
-	BaseFeePerGas    string
-	Transactions     StringSlice `gorm:"type:jsonb"`
-	Hash             string
-	Size             uint64
-}
-type Transaction struct {
-	gorm.Model
-	Hash             string
-	BlockNumber      string
-	BlockHash        string
-	FromAddress      string
-	ToAddress        string
-	Value            string
-	GasPrice         string
-	GasLimit         uint64
-	InputData        string
-	Nonce            uint64
-	TransactionIndex uint64
-	Type             uint8
-	ChainId          uint64
-	R                string
-	S                string
-}
-type Receipt struct {
-	gorm.Model
-	Type              uint8  `json:"type"` //type: "0x0"
-	Root              string `json:"root"`
-	Status            uint64 `json:"status"`              //status: "0x1",
-	CumulativeGasUsed uint64 `json:"cumulative_gas_used"` //cumulativeGasUsed: 319971,
-	LogsBloom         string `json:"logs_bloom"`          //logsBloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-	Logs              int    `json:"logs"`                //logs: [],
-	TransactionHash   string `json:"transaction_hash"`    //transactionHash: "0x11f07f52853cd5a4eb6a618f6f75472f6b3233101d24a8560c23b8ff2bbb3ff4",
-	ContractAddress   string `json:"contract_address"`    //contractAddress: "0x97077686617a8f4478863c23b73b7387ba35a802",
-	GasUsed           uint64 `json:"gas_used"           ` //gasUsed: 319971,
-	BlockHash         string `json:"block_hash"`          //blockHash: "0x0b71e27419dd0dd04f551c573c65bd6cacfe760b0e3d1fa12566115ed0e320fb",
-	BlockNumber       string `json:"block_number"`        //blockNumber: 28453,
-	TransactionIndex  uint   `json:"transaction_index"`   //transactionIndex: 0,
-	FromAddress       string `json:"from_address"`
-	ToAddress         string `json:"to_address"`
-}
-type Log struct {
-	gorm.Model
-	Address          string      `json:"address"`
-	Topics           StringSlice `json:"topics"  gorm:"type:jsonb"`
-	Data             string      `json:"data"`
-	BlockNumber      uint64      `json:"block_number"`
-	TransactionHash  string      `json:"transaction_hash"`
-	TransactionIndex uint        `json:"transaction_index"`
-	BlockHash        string      `json:"block_hash"`
-	LogIndex         uint        `json:"log_index"`
-	Removed          bool        `json:"removed"`
+// TestDatabaseQuery 测试数据库查询功能
+func TestDatabaseQuery(t *testing.T) {
+	// 初始化配置
+	config.Init()
+
+	// 初始化数据库连接
+	bsdb.InitPgConn()
+
+	// 测试简单查询
+	var result int64
+	err := bsdb.Db.Raw("SELECT 1").Scan(&result).Error
+	assert.NoError(t, err, "数据库查询失败")
+	assert.Equal(t, int64(1), result, "查询结果应该为 1")
+
+	// 测试获取当前时间
+	var currentTime time.Time
+	err = bsdb.Db.Raw("SELECT NOW()").Scan(&currentTime).Error
+	assert.NoError(t, err, "获取当前时间失败")
+	assert.False(t, currentTime.IsZero(), "当前时间不应该为零值")
+	t.Logf("数据库当前时间: %s", currentTime.Format(time.RFC3339))
+
+	// 测试获取数据库版本
+	var version string
+	err = bsdb.Db.Raw("SELECT version()").Scan(&version).Error
+	assert.NoError(t, err, "获取数据库版本失败")
+	assert.NotEmpty(t, version, "数据库版本不应该为空")
+	t.Logf("数据库版本: %s", version)
 }
 
-func TestCreateDB(t *testing.T) {
-	dsn := fmt.Sprintf("host=192.168.10.126 user=eth password=123456 dbname=eth_explorer port=5432 sslmode=disable TimeZone=UTC")
-	gormCfg := &gorm.Config{}
-	db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), gormCfg)
+// TestRedisConnection 测试 Redis 连接
+func TestRedisConnection(t *testing.T) {
+	// 初始化配置
+	config.Init()
+
+	// 创建 Redis 客户端
+	client := redisCache.NewRedisClient()
+	require.NotNil(t, client, "Redis 客户端不应该为 nil")
+
+	// 测试 Ping，使用更长的超时时间
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pong, err := client.Ping(ctx).Result()
 	if err != nil {
-		panic(err)
+		// 提供详细的错误信息，帮助诊断问题
+		t.Logf("Redis 连接失败详情:")
+		t.Logf("  地址: %s", config.RedisAddr)
+		t.Logf("  错误: %v", err)
+		t.Logf("  可能的原因:")
+		t.Logf("    1. Redis 服务器未运行")
+		t.Logf("    2. 网络连接问题（防火墙、网络不通）")
+		t.Logf("    3. Redis 服务器地址或端口配置错误")
+		t.Logf("    4. Redis 密码配置错误")
+		t.Logf("  建议: 检查 Redis 服务器状态和网络连接")
 	}
-
-	//检查是否创建
-	if !db.Migrator().HasTable(&Block{}) {
-		//创建
-		err = db.Table("blocks").AutoMigrate(&Block{})
-		if err != nil {
-			panic("failed to migrate Block table")
-		}
+	assert.NoError(t, err, "Redis Ping 失败，请检查 Redis 服务器是否运行以及网络连接是否正常")
+	if err == nil {
+		assert.Equal(t, "PONG", pong, "Redis Ping 应该返回 PONG")
+		t.Logf("Redis 连接成功: %s", pong)
 	}
-
-	if !db.Migrator().HasTable(&Transaction{}) {
-		//创建
-		err = db.Table("transactions").AutoMigrate(&Transaction{})
-		if err != nil {
-			panic("failed to migrate Transaction table")
-		}
-	}
-
-	if !db.Migrator().HasTable(&Receipt{}) {
-		//创建
-		err = db.Table("receipts").AutoMigrate(&Receipt{})
-		if err != nil {
-			panic("failed to migrate Receipt table")
-		}
-	}
-
-	if !db.Migrator().HasTable(&Log{}) {
-		//创建
-		err = db.Table("logs").AutoMigrate(&Log{})
-		if err != nil {
-			panic("failed to migrate Log table")
-		}
-	}
-
 }
 
-func TestDropDB(t *testing.T) {
-	dsn := fmt.Sprintf("host=192.168.10.126 user=eth password=123456 dbname=eth_explorer port=5432 sslmode=disable TimeZone=UTC")
-	gormCfg := &gorm.Config{}
-	db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), gormCfg)
-	if err != nil {
-		panic(err)
-	}
+// TestRedisBasicOperations 测试 Redis 基本操作
+func TestRedisBasicOperations(t *testing.T) {
+	// 初始化配置
+	config.Init()
 
-	//检查是否创建
-	if db.Migrator().HasTable(&Block{}) {
-		//删除
-		err = db.Migrator().DropTable(&Block{})
-		if err != nil {
-			panic("failed to drop Block table")
-		}
-	}
+	// 创建 Redis 客户端
+	client := redisCache.NewRedisClient()
+	require.NotNil(t, client, "Redis 客户端不应该为 nil")
 
-	//检查是否创建
-	if db.Migrator().HasTable(&Transaction{}) {
-		//删除
-		err = db.Migrator().DropTable(&Transaction{})
-		if err != nil {
-			panic("failed to drop Transaction table")
-		}
-	}
+	ctx := context.Background()
+	testKey := "test:connection:key"
+	testValue := "test_value"
 
-	//检查是否创建
-	if db.Migrator().HasTable(&Receipt{}) {
-		//删除
-		err = db.Migrator().DropTable(&Receipt{})
-		if err != nil {
-			panic("failed to drop Receipt table")
-		}
-	}
+	// 清理测试数据
+	defer func() {
+		client.Del(ctx, testKey)
+	}()
 
-	//检查是否创建
-	if db.Migrator().HasTable(&Log{}) {
-		//删除
-		err = db.Migrator().DropTable(&Log{})
-		if err != nil {
-			panic("failed to drop Log table")
-		}
-	}
+	// 测试 Set
+	err := client.Set(ctx, testKey, testValue, 10*time.Second).Err()
+	assert.NoError(t, err, "Redis Set 失败")
 
+	// 测试 Get
+	value, err := client.Get(ctx, testKey).Result()
+	assert.NoError(t, err, "Redis Get 失败")
+	assert.Equal(t, testValue, value, "获取的值应该与设置的值相同")
+
+	// 测试 Exists
+	exists, err := client.Exists(ctx, testKey).Result()
+	assert.NoError(t, err, "Redis Exists 失败")
+	assert.Equal(t, int64(1), exists, "键应该存在")
+
+	// 测试 TTL
+	ttl, err := client.TTL(ctx, testKey).Result()
+	assert.NoError(t, err, "Redis TTL 失败")
+	assert.Greater(t, ttl, time.Duration(0), "TTL 应该大于 0")
+	t.Logf("键的 TTL: %v", ttl)
+
+	// 测试 Delete
+	err = client.Del(ctx, testKey).Err()
+	assert.NoError(t, err, "Redis Delete 失败")
+
+	// 验证删除成功
+	exists, err = client.Exists(ctx, testKey).Result()
+	assert.NoError(t, err, "Redis Exists 失败")
+	assert.Equal(t, int64(0), exists, "键应该已被删除")
 }
 
-func TestFunc(t *testing.T) {
-	dsn := fmt.Sprintf("host=192.168.10.126 user=eth password=123456 dbname=eth_explorer port=5432 sslmode=disable TimeZone=UTC")
-	gormCfg := &gorm.Config{}
-	db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), gormCfg)
-	if err != nil {
-		panic(err)
-	}
+// TestRedisCacheFunctions 测试 Redis 缓存函数
+func TestRedisCacheFunctions(t *testing.T) {
+	// 初始化配置
+	config.Init()
 
-	block := getBlockByNumber(db, 109895)
-	fmt.Println("1.getBlockByNumber", block)
+	// 创建 Redis 客户端
+	client := redisCache.NewRedisClient()
+	require.NotNil(t, client, "Redis 客户端不应该为 nil")
 
-	tx := getTransactionByHash(db, "0x9d2344d8f260316ed4d967ade19ee43080a8aa76994ecde397f8a7fb737761cd")
-	fmt.Println("2.getTransactionByHash", tx)
+	testKey := "test:cache:key"
+	testValue := "test_cache_value"
 
-	txs := getTransactions(db, 2, 8)
-	fmt.Println("3.getTransactions", len(txs))
+	// 清理测试数据
+	defer func() {
+		redisCache.CacheDelete(testKey)
+	}()
 
-	bs := getBlocks(db, 1, 5)
-	fmt.Println("4.getBlocks", len(bs))
+	// 测试 CacheSetString
+	err := redisCache.CacheSetString(testKey, testValue, 10*time.Second)
+	assert.NoError(t, err, "CacheSetString 失败")
 
-	addrCount, err := getAddressCount(db)
-	fmt.Println("5.getAddressCount: ", addrCount, err)
+	// 测试 CacheGetString
+	value, err := redisCache.CacheGetString(testKey)
+	assert.NoError(t, err, "CacheGetString 失败")
+	assert.Equal(t, testValue, value, "获取的值应该与设置的值相同")
 
-	txCount, err := getTransactionCount(db)
-	fmt.Println("6.getTransactionCount: ", txCount, err)
+	// 测试 CacheExists
+	exists, err := redisCache.CacheExists(testKey)
+	assert.NoError(t, err, "CacheExists 失败")
+	assert.True(t, exists, "键应该存在")
 
-	blockCount, err := getBlockCount(db)
-	fmt.Println("7.getBlockCount: ", blockCount, err)
+	// 测试 CacheDelete
+	err = redisCache.CacheDelete(testKey)
+	assert.NoError(t, err, "CacheDelete 失败")
 
-	rp := getReceiptByHash(db, "0x9d2344d8f260316ed4d967ade19ee43080a8aa76994ecde397f8a7fb737761cd")
-	fmt.Println("8.getReceiptByHash", rp)
-
-	rps := getReceipts(db, 2, 8)
-	fmt.Println("9.getReceipts", len(rps))
-
-	rbt := getReceiptsByLast(db, 2)
-	fmt.Println("10.getReceiptsByLast: ", len(rbt))
-
-	tba := getTransactionsByAddress(db, "0x30E938B0630c02f394d17925fDb5fb046F70D452")
-	fmt.Println("11.getTransactionsByAddress", len(tba))
-
-	rba := getReceiptsByAddress(db, "0x30E938B0630c02f394d17925fDb5fb046F70D452")
-	fmt.Println("12.getReceiptsByAddress", len(rba))
-
+	// 验证删除成功
+	exists, err = redisCache.CacheExists(testKey)
+	assert.NoError(t, err, "CacheExists 失败")
+	assert.False(t, exists, "键应该已被删除")
 }
 
-// 区块详情
-func getBlockByNumber(db *gorm.DB, number int) Block {
-	var block Block
-	db.Where("number = ?", strconv.Itoa(number)).First(&block)
-	return block
+// TestRedisIncr 测试 Redis 递增操作
+func TestRedisIncr(t *testing.T) {
+	// 初始化配置
+	config.Init()
+
+	// 创建 Redis 客户端
+	client := redisCache.NewRedisClient()
+	require.NotNil(t, client, "Redis 客户端不应该为 nil")
+
+	testKey := "test:incr:key"
+
+	// 清理测试数据
+	defer func() {
+		redisCache.CacheDelete(testKey)
+	}()
+
+	// 测试 CacheIncr
+	count, err := redisCache.CacheIncr(testKey)
+	assert.NoError(t, err, "CacheIncr 失败")
+	assert.Equal(t, int64(1), count, "第一次递增应该返回 1")
+
+	count, err = redisCache.CacheIncr(testKey)
+	assert.NoError(t, err, "CacheIncr 失败")
+	assert.Equal(t, int64(2), count, "第二次递增应该返回 2")
+
+	t.Logf("递增后的值: %d", count)
 }
 
-// 交易详情
-func getTransactionByHash(db *gorm.DB, hash string) Transaction {
-	var transaction Transaction
-	db.Where("hash=?", hash).First(&transaction)
-	return transaction
-}
+// TestDatabaseAndRedisIntegration 测试数据库和 Redis 集成
+func TestDatabaseAndRedisIntegration(t *testing.T) {
+	// 初始化配置
+	config.Init()
 
-// 批量查询
-func getTransactions(db *gorm.DB, start, end int) []Transaction {
-	var transactions []Transaction
-	db.
-		Order("id ASC").
-		Offset(start).
-		Limit(end).
-		Find(&transactions)
-	return transactions
-}
+	// 初始化数据库
+	bsdb.InitPgConn()
+	sqlDB, err := bsdb.Db.DB()
+	require.NoError(t, err, "获取数据库连接失败")
+	defer sqlDB.Close()
 
-// 批量查询
-func getBlocks(db *gorm.DB, start, end int) []Block {
-	var blocks []Block
-	db.
-		Order("id ASC").
-		Offset(start).
-		Limit(end).
-		Find(&blocks)
-	return blocks
-}
+	// 初始化 Redis
+	client := redisCache.NewRedisClient()
+	require.NotNil(t, client, "Redis 客户端不应该为 nil")
 
-// 地址数量
-func getAddressCount(db *gorm.DB) (int64, error) {
-	var count int64
-	err := db.Raw("SELECT COUNT(DISTINCT from_address) FROM transactions").Scan(&count).Error
-	return count, err
-}
+	// 测试数据库连接
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-// 交易总数
-func getTransactionCount(db *gorm.DB) (string, error) {
-	var transaction Transaction
-	result := db.Last(&transaction)
-	if result.Error != nil {
-		return "", result.Error
-	}
-	return strconv.Itoa(int(transaction.ID)), nil
-}
+	err = sqlDB.PingContext(ctx)
+	assert.NoError(t, err, "数据库连接失败")
 
-// 区块总数
-func getBlockCount(db *gorm.DB) (string, error) {
-	var block Block
-	result := db.Last(&block)
-	if result.Error != nil {
-		return "", result.Error
-	}
-	return strconv.Itoa(int(block.ID)), nil
-}
+	// 测试 Redis 连接
+	pong, err := client.Ping(ctx).Result()
+	assert.NoError(t, err, "Redis 连接失败")
+	assert.Equal(t, "PONG", pong, "Redis Ping 应该返回 PONG")
 
-// 查询收据
-func getReceiptByHash(db *gorm.DB, hash string) Receipt {
-	var receipt Receipt
-	db.Where("transaction_hash=?", hash).First(&receipt)
-	return receipt
-}
-
-// 批量查询查询收据
-func getReceipts(db *gorm.DB, start, end int) []Receipt {
-	var receipts []Receipt
-	db.
-		Order("id ASC").
-		Offset(start).
-		Limit(end).
-		Find(&receipts)
-	return receipts
-}
-
-// 查询最近7天收据 x
-func getReceiptsByLast(db *gorm.DB, timestamp uint64) []Receipt {
-	var receipts []Receipt
-	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
-	db.Where("created_at >= ?", sevenDaysAgo).Find(&receipts)
-	return receipts
-}
-
-func getTransactionsByAddress(db *gorm.DB, address string) []Receipt {
-	var receipts []Receipt
-	db.Where("from_address = ?", address).Find(&receipts)
-	return receipts
-}
-
-func getReceiptsByAddress(db *gorm.DB, address string) []Receipt {
-	var receipts []Receipt
-	db.Where("from_address = ?", address).Find(&receipts)
-	return receipts
+	t.Logf("数据库和 Redis 连接都正常")
 }

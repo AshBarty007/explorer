@@ -46,7 +46,7 @@ func Sync() {
 	end = start
 
 	// 连接以太坊客户端
-	etClient, err := blockchain.Dial(config.TestUrl)
+	etClient, err := blockchain.Dial(config.LocalUrl)
 	if err != nil {
 		log.Fatalf("连接以太坊客户端失败: %v", err)
 	}

@@ -11,18 +11,11 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var (
-	host     = config.DbHost
-	username = config.DbUsername
-	password = config.DbPassword
-	database = config.DbName
-	port     = config.DbPort
-	Db       *gorm.DB
-)
+var Db *gorm.DB
 
 func InitPgConn() {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		host, username, password, database, port,
+		config.DbHost, config.DbUsername, config.DbPassword, config.DbName, config.DbPort,
 	)
 
 	// 配置GORM，启用日志
@@ -30,7 +23,8 @@ func InitPgConn() {
 		Logger: logger.Default.LogMode(logger.Info),
 	}
 
-	Db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), gormCfg)
+	var err error
+	Db, err = gorm.Open(postgres.New(postgres.Config{DSN: dsn}), gormCfg)
 	if err != nil {
 		panic("连接数据库失败: " + err.Error())
 	}
@@ -81,6 +75,10 @@ func InitPgConn() {
 
 // createIndexes 创建数据库索引以优化查询性能
 func createIndexes() error {
+	if Db == nil {
+		return fmt.Errorf("数据库连接未初始化")
+	}
+
 	indexes := []string{
 		// 区块表索引
 		"CREATE INDEX IF NOT EXISTS idx_blocks_number ON blocks(number)",
